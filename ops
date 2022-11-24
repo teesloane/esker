@@ -1,0 +1,1 @@
+{"author":{"id":"b402fedd6b84f579fd77f18257ca0d80170846fc5bd4dbbd6520c0b53410098c"},"ops":[{"type":1,"timestamp":1669326411,"nonce":"i2qinH7gC27r+OEZcenBWrEzuYY=","title":"Feat: Add clap","message":"- should take one flag - the directory of files.","files":null}]}
