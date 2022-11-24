@@ -1,1 +1,1 @@
-{"author":{"id":"029529d990b6f1a661fdf6848e32e113ba4bf1283292d5f61636ddb955641d8c"},"ops":[{"type":1,"timestamp":1669325466,"nonce":"kQ3Xerj3FqnyghFNgn77MYLOuiM=","title":"Add Clap:","message":"- [ ] add the library\n- [ ] pass in a directory of files\n- [ ] print what's in the directory","files":null}]}
+{"author":{"id":"029529d990b6f1a661fdf6848e32e113ba4bf1283292d5f61636ddb955641d8c"},"ops":[{"type":2,"timestamp":1669325848,"nonce":"YWHSITsvFzbPRmicZnt8+aKEXOo=","title":"Add Clap:","was":"Add Clap:"}]}
