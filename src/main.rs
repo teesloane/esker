@@ -1,10 +1,17 @@
-use std::path::PathBuf;
+pub mod site;
 
+use std::{path::PathBuf};
 use clap::{Parser, Subcommand};
+use site::Site;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 struct Cli {
+
+    /// Directory of where you want to run esker
+    #[arg(short, long, value_name = "DIR", global = true)]
+    dir: Option<PathBuf>,
+
     #[command(subcommand)]
     command: Option<Commands>,
 }
@@ -12,23 +19,17 @@ struct Cli {
 #[derive(Subcommand)]
 enum Commands {
     /// Build your site
-    Build {
-        /// Directory of your site
-        #[arg(short, long, value_name = "DIR")]
-        dir: Option<PathBuf>
-    },
+    Build
 }
+
 
 fn main() {
     let cli = Cli::parse();
 
     match &cli.command {
-        Some(Commands::Build { dir }) => {
-            if let Some(dir_path) = dir {
-                println!("Dir_path is {}", dir_path.display());
-            } else {
-                println!("Not printing testing lists...");
-            }
+        Some(Commands::Build) => {
+            let s = Site::new(cli.dir);
+            println!("{:?}", s.dir);
         }
         None => {}
     }
