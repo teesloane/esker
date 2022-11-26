@@ -1,1 +1,1 @@
-{"author":{"id":"b402fedd6b84f579fd77f18257ca0d80170846fc5bd4dbbd6520c0b53410098c"},"ops":[{"type":6,"timestamp":1669493360,"nonce":"1zy1T2ho3+Tb0tzsMbMceqetOA0=","target":"6aa6fcf4af00e9e6c0200718d3fc74eb73d7a32c075981c3fd174e9374806f53","message":"- [x] install glob\n- [x] glob all the markdown files\n- [x] store the files into a \"raw_files\" field in the site struct","files":null}]}
+{"author":{"id":"b402fedd6b84f579fd77f18257ca0d80170846fc5bd4dbbd6520c0b53410098c"},"ops":[{"type":4,"timestamp":1669493362,"nonce":"ytiguCWiV2oeY06gvgi7f38JCmA=","status":2}]}
