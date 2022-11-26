@@ -1,1 +1,1 @@
-{"author":{"id":"b402fedd6b84f579fd77f18257ca0d80170846fc5bd4dbbd6520c0b53410098c"},"ops":[{"type":6,"timestamp":1669327977,"nonce":"lB/hzW+rbRfChpOChm+jvqSO41g=","target":"6715b92402bf0a088c85b1c3dda3a02955a5c46505cef91a1baaf09c0774dff4","message":"- should take one flag - the directory of files.\n- the directory its run in / dir path should update a basic site struct for now.","files":null}]}
+{"author":{"id":"b402fedd6b84f579fd77f18257ca0d80170846fc5bd4dbbd6520c0b53410098c"},"ops":[{"type":4,"timestamp":1669480777,"nonce":"OtfYBU7orv1AbdGe37NKxgZCM+I=","status":2}]}
