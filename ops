@@ -1,0 +1,1 @@
+{"author":{"id":"b402fedd6b84f579fd77f18257ca0d80170846fc5bd4dbbd6520c0b53410098c"},"ops":[{"type":1,"timestamp":1669480994,"nonce":"Q8CUNil8mhc/Hh+3c85fd7zIV94=","title":"Feat: load files into memory in site struct","message":"- install glob\n- glob all the markdown files\n- store the files into a \"raw_files\" field in the site struct","files":null}]}
