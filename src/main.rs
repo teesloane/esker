@@ -1,6 +1,7 @@
 pub mod site;
+pub mod util;
 
-use std::{path::PathBuf};
+use std::path::PathBuf;
 use clap::{Parser, Subcommand};
 use site::Site;
 
@@ -29,7 +30,7 @@ fn main() {
     match &cli.command {
         Some(Commands::Build) => {
             let s = Site::new(cli.dir);
-            println!("{:?}", s.dir);
+            println!("{:?}", s);
         }
         None => {}
     }
