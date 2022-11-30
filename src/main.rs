@@ -1,5 +1,10 @@
+#![allow(dead_code)]
+#![allow(unused_mut)]
+#![allow(unused_variables)]
+
 pub mod site;
 pub mod util;
+pub mod md_file;
 
 use std::path::PathBuf;
 use clap::{Parser, Subcommand};
@@ -23,14 +28,13 @@ enum Commands {
     Build
 }
 
-
 fn main() {
     let cli = Cli::parse();
 
     match &cli.command {
         Some(Commands::Build) => {
             let s = Site::new(cli.dir);
-            println!("{:?}", s);
+            // println!("{:#?}", s);
         }
         None => {}
     }
