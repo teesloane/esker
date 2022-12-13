@@ -5,6 +5,7 @@
 pub mod site;
 pub mod util;
 pub mod md_file;
+pub mod frontmatter;
 
 use std::path::PathBuf;
 use clap::{Parser, Subcommand};

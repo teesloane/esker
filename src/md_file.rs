@@ -1,148 +1,73 @@
-use crate::util;
-use chrono::prelude::{DateTime, Local, NaiveDateTime};
-use std::fs;
-use std::path::PathBuf;
+use std::{fs, path::PathBuf};
 
 use std::io;
 use std::io::{BufRead, BufReader};
-
-#[derive(Debug)]
-pub struct Frontmatter {
-    title: String,
-    filepath: PathBuf,
-    summary: Option<String>,
-    tags: Vec<String>,
-    published: bool,
-    date_created: NaiveDateTime,
-    date_updated: NaiveDateTime,
-}
-
-impl Frontmatter {
-    pub fn new(md_file_path: &PathBuf) -> Option<Frontmatter> {
-        let metadata = fs::metadata(md_file_path).unwrap();
-        let mut has_valid_fm = true;
-
-        let date_created = metadata.created().expect("failed to get created time.");
-        let date_created: DateTime<Local> = date_created.clone().into();
-        let date_created: NaiveDateTime = date_created.naive_local();
-
-        let date_updated = metadata.modified().expect("failed to get modified time.");
-        let date_updated: DateTime<Local> = date_updated.clone().into();
-        let date_updated: NaiveDateTime = date_updated.naive_local();
-
-        let mut fm = Frontmatter {
-            title: std::ffi::OsString::into_string(
-                md_file_path.file_stem().unwrap().to_os_string(),
-            )
-            .unwrap(),
-            filepath: md_file_path.clone(),
-            date_created,
-            date_updated,
-            summary: None,
-            published: true,
-            tags: Vec::new(),
-        };
-        let mut capturing = false;
-
-        if let Ok(lines) = util::read_lines(md_file_path) {
-            for line in lines {
-                if let Ok(line) = line {
-                    if line != "---" && capturing == false {
-                        has_valid_fm = false;
-                        break;
-                    }
-
-                    if line == "---" && capturing == false {
-                        capturing = true;
-                        continue;
-                    }
-
-                    fm.get_key_value_from_line(&line);
-
-                    if line == "---" && capturing == true {
-                        break;
-                    }
-                }
-            }
-        }
-
-        if has_valid_fm {
-            return Some(fm);
-        } else {
-            return None;
-        }
-    }
-
-    pub fn get_key_value_from_line(&mut self, line: &str) {
-        match line.split_once(":") {
-            Some((key, val)) => {
-                let lhs = key.trim();
-                let rhs = val.trim();
-
-                match lhs {
-                    "title" => self.title = rhs.trim().to_string(),
-                    "date_created" => {
-                        let date_created = NaiveDateTime::parse_from_str(rhs, "%Y-%m-%d %H:%M")
-                            .expect("failed to parse datestring.");
-                        self.date_created = date_created;
-                    }
-
-                    "date_updated" => {
-                        let date_updated = NaiveDateTime::parse_from_str(rhs, "%Y-%m-%d %H:%M")
-                            .expect("failed to parse datestring.");
-                        self.date_updated = date_updated;
-                    }
-                    "summary" => {
-                        self.summary = Some(rhs.to_string());
-                    }
-
-                    "published" => {
-                        self.published = if rhs == "false" { false } else { true };
-                    }
-
-                    "tag" | "tags" => {
-                        let tags = rhs.split(",");
-                        let vec: Vec<_> = tags
-                            .collect::<Vec<&str>>()
-                            .iter()
-                            .map(|tag| tag.trim().to_string())
-                            .collect();
-                        self.tags = vec;
-                    }
-                    _ => (),
-                }
-            }
-            None => {}
-        }
-    }
-
-    pub fn date_modified_str(&self) -> String {
-        return self.date_updated.format("%Y-%m-%d %H:%M").to_string();
-    }
-
-    pub fn date_created_str(&self) -> String {
-        return self.date_updated.format("%Y-%m-%d %H:%M").to_string();
-    }
-}
+use pulldown_cmark::{Parser, Options, html};
+use slugify::slugify;
+use crate::frontmatter::Frontmatter;
+use crate::site::Site;
 
 #[derive(Debug)]
 pub struct MdFile {
     raw: String,
+    html: String,
     path: PathBuf,
+    web_path: PathBuf,
+    out_path: PathBuf,
     frontmatter: Frontmatter,
+    full_url: String,
 }
 
 impl MdFile {
-    pub fn new(raw_str: String, path: PathBuf, fm: Frontmatter) -> MdFile {
+    pub fn new(site: &Site, raw_str: String, path: PathBuf, fm: Frontmatter) -> MdFile {
+        // Life's too shore to write good code:
+        let filename = path.file_stem().unwrap().to_str().unwrap().to_string();
+        let mut out_file_path_slugified = slugify!(&filename);
+        let web_path = PathBuf::from(out_file_path_slugified.clone()).with_extension("html");
+        let web_path_str = web_path.clone().into_os_string().into_string().unwrap();
+        let out_path = PathBuf::from(&site.dir_build).join(PathBuf::from(&web_path));
+        let full_url = site.build_with_baseurl(web_path_str);
+        // end bad code byeeee
+
         let mut md_file = MdFile {
             raw: raw_str,
+            html: String::from(""),
             path,
+            out_path,
+            web_path: PathBuf::new(),
+            full_url,
             frontmatter: fm,
         };
 
         md_file.set_raw_contents().expect("Failed to set raw contents for file");
-
         return md_file;
+    }
+
+    /// writes a file to it's specified output path.
+    pub fn write_html(&mut self) {
+
+        // parse the markdown for writing it. ---
+        let mut options = Options::empty();
+        options.insert(Options::ENABLE_STRIKETHROUGH);
+        let parser = Parser::new_ext(&self.raw, options);
+        let mut html_output = String::new();
+        html::push_html(&mut html_output, parser);
+
+
+        // write to file ----
+        let prefix = &self.out_path.parent().unwrap();
+        fs::create_dir_all(prefix).unwrap();
+        let mut file = fs::File::create(&self.out_path).expect("couldn't create file");
+        fs::write(&self.out_path, html_output).expect("Unable to write file");
+    }
+
+    pub fn parse_md_to_html(&mut self) {
+        let mut options = Options::empty();
+        options.insert(Options::ENABLE_STRIKETHROUGH);
+        let parser = Parser::new_ext(&self.raw, options);
+        let mut html_output = String::new();
+        html::push_html(&mut html_output, parser);
+        self.html = html_output;
     }
 
     /// sets the "raw" contents field for the md_file to be the file without the frontmatter.

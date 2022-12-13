@@ -2,17 +2,24 @@ use std::{path::PathBuf, env};
 use std::fs;
 
 use crate::util;
-use crate::md_file::{MdFile, Frontmatter};
+use crate::{md_file::MdFile, frontmatter::Frontmatter};
 
 #[derive(Debug)]
 pub struct Site {
+    /// The dir we are running the site in.
     pub dir: PathBuf,
     /// a list of markdown paths to process
     markdown_files_paths: Vec<PathBuf>,
     /// markdown as a struct of data and metadata
     markdown_files: Vec<MdFile>,
     /// files that have invalid frontmatter:=
-    invalid_files: Vec<PathBuf>
+    invalid_files: Vec<PathBuf>,
+    /// baseurl
+    baseurl: String,
+    /// out_path
+    pub dir_build: PathBuf,
+    /// dir_vault - where all your markdown files are (your obsidian vault)
+    dir_vault: PathBuf,
 }
 
 impl Site {
@@ -25,13 +32,22 @@ impl Site {
         }
 
         let mut site = Site {
-            dir: cwd,
+            dir: cwd.clone(),
             markdown_files_paths: Vec::new(),
             markdown_files: Vec::new(),
             invalid_files: Vec::new(),
+            // TODO: make it possible to pass custom dir.
+            // TODO: maybe build the output to be a parent up from dir_vault
+            dir_build: cwd.join("_site"),
+            dir_vault: cwd,
+
+            baseurl: "foo.com".to_string()
         };
 
         site.load_files();
+
+        println!("{:#?}", site);
+
         return site
     }
 
@@ -42,11 +58,12 @@ impl Site {
         let mut markdown_files: Vec<MdFile> = Vec::new();
         let mut invalid_files: Vec<PathBuf> = Vec::new();
 
+        // collect all files and their metadata.
         self.markdown_files_paths.iter().for_each(|f| {
             let fm = Frontmatter::new(f);
             if let Some(fm) = Frontmatter::new(f) {
                 let read_file = fs::read_to_string(f).expect("Unable to open file");
-                let md_file  = MdFile::new(read_file, f.to_path_buf(), fm);
+                let md_file  = MdFile::new(self, read_file, f.to_path_buf(), fm);
                 markdown_files.push(md_file);
             } else {
                 invalid_files.push(f.clone());
@@ -55,5 +72,14 @@ impl Site {
 
         self.markdown_files = markdown_files;
         self.invalid_files = invalid_files;
+
+        // for each file, now that we have global data...render out their html
+        for mut f in &mut self.markdown_files {
+            f.write_html();
+        }
+    }
+
+    pub fn build_with_baseurl(&self, web_path: String) -> String {
+        return format!("{}/{}", self.baseurl, web_path);
     }
 }
