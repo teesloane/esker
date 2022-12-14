@@ -6,7 +6,7 @@ use crate::{md_file::MdFile, frontmatter::Frontmatter};
 
 #[derive(Debug)]
 pub struct Site {
-    /// The dir we are running the site in.
+    /// The dir we are running the site in. // TODO: merge this with dir_vault?
     pub dir: PathBuf,
     /// a list of markdown paths to process
     markdown_files_paths: Vec<PathBuf>,
@@ -46,7 +46,7 @@ impl Site {
 
         site.load_files();
 
-        println!("{:#?}", site);
+        // println!("{:#?}", site);
 
         return site
     }
@@ -60,7 +60,6 @@ impl Site {
 
         // collect all files and their metadata.
         self.markdown_files_paths.iter().for_each(|f| {
-            let fm = Frontmatter::new(f);
             if let Some(fm) = Frontmatter::new(f) {
                 let read_file = fs::read_to_string(f).expect("Unable to open file");
                 let md_file  = MdFile::new(self, read_file, f.to_path_buf(), fm);
