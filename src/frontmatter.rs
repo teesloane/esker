@@ -3,6 +3,8 @@ use chrono::prelude::{DateTime, Local, NaiveDateTime};
 use std::fs;
 use std::path::PathBuf;
 
+use colored::*;
+
 #[derive(Debug)]
 pub struct Frontmatter {
     title: String,
@@ -79,16 +81,32 @@ impl Frontmatter {
                 match lhs {
                     "title" => self.title = rhs.trim().to_string(),
                     "date_created" => {
-                        let date_created = NaiveDateTime::parse_from_str(rhs, "%Y-%m-%d %H:%M")
-                            .expect("failed to parse datestring.");
-                        self.date_created = date_created;
-                    }
+                        match NaiveDateTime::parse_from_str(rhs, "%Y-%m-%d %H:%M") {
+                            Ok(date_created) => self.date_created = date_created,
+                            Err(_) => {
+                                println!("\n⚠️  File {}\ndoes not have {} in {} format: defaulting to file creation metadata.\n",
+                                         self.filepath.clone().into_os_string().into_string().unwrap().yellow().on_black(),
+                                         "date_created".red(),
+                                         "%Y-%m-%d %H:%M".green()
+                                );
+                            }
+                        }
+                    },
 
                     "date_updated" => {
-                        let date_updated = NaiveDateTime::parse_from_str(rhs, "%Y-%m-%d %H:%M")
-                            .expect("failed to parse datestring.");
-                        self.date_updated = date_updated;
-                    }
+
+                        match NaiveDateTime::parse_from_str(rhs, "%Y-%m-%d %H:%M") {
+                            Ok(date_updated) => self.date_updated = date_updated,
+                            Err(_) => {
+                                println!("\n⚠️  File {}\ndoes not have {} in {} format: defaulting to file last modified metadata.\n",
+                                         self.filepath.clone().into_os_string().into_string().unwrap().yellow().on_black(),
+                                         "date_updated".red(),
+                                         "%Y-%m-%d %H:%M".green()
+                                );
+                            }
+                        }
+                    },
+
                     "summary" => {
                         self.summary = Some(rhs.to_string());
                     }
