@@ -1,9 +1,8 @@
-use crate::util;
+// use crate::util;
+use crate::{site::Site, util};
 use chrono::prelude::{DateTime, Local, NaiveDateTime};
 use std::fs;
 use std::path::PathBuf;
-
-use colored::*;
 
 #[derive(Debug)]
 pub struct Frontmatter {
@@ -17,7 +16,7 @@ pub struct Frontmatter {
 }
 
 impl Frontmatter {
-    pub fn new(md_file_path: &PathBuf) -> Option<Frontmatter> {
+    pub fn new(site: &mut Site, md_file_path: &PathBuf) -> Option<Frontmatter> {
         let metadata = fs::metadata(md_file_path).unwrap();
         let mut has_valid_fm = true;
 
@@ -56,7 +55,7 @@ impl Frontmatter {
                         continue;
                     }
 
-                    fm.get_key_value_from_line(&line);
+                    fm.get_key_value_from_line(&line, site);
 
                     if line == "---" && capturing == true {
                         break;
@@ -72,7 +71,7 @@ impl Frontmatter {
         }
     }
 
-    pub fn get_key_value_from_line(&mut self, line: &str) {
+    pub fn get_key_value_from_line(&mut self, line: &str, site: &mut Site) {
         match line.split_once(":") {
             Some((key, val)) => {
                 let lhs = key.trim();
@@ -80,30 +79,17 @@ impl Frontmatter {
 
                 match lhs {
                     "title" => self.title = rhs.trim().to_string(),
-                    "date_created" => {
-                        match NaiveDateTime::parse_from_str(rhs, "%Y-%m-%d %H:%M") {
-                            Ok(date_created) => self.date_created = date_created,
-                            Err(_) => {
-                                println!("\n⚠️  File {}\ndoes not have {} in {} format: defaulting to file creation metadata.\n",
-                                         self.filepath.clone().into_os_string().into_string().unwrap().yellow().on_black(),
-                                         "date_created".red(),
-                                         "%Y-%m-%d %H:%M".green()
-                                );
-                            }
+                    "date_created" => match NaiveDateTime::parse_from_str(rhs, "%Y-%m-%d %H:%M") {
+                        Ok(date_created) => self.date_created = date_created,
+                        Err(_) => {
+                            site.errors.add_invalid_date_created(self.get_filepath_as_str());
                         }
                     },
 
-                    "date_updated" => {
-
-                        match NaiveDateTime::parse_from_str(rhs, "%Y-%m-%d %H:%M") {
-                            Ok(date_updated) => self.date_updated = date_updated,
-                            Err(_) => {
-                                println!("\n⚠️  File {}\ndoes not have {} in {} format: defaulting to file last modified metadata.\n",
-                                         self.filepath.clone().into_os_string().into_string().unwrap().yellow().on_black(),
-                                         "date_updated".red(),
-                                         "%Y-%m-%d %H:%M".green()
-                                );
-                            }
+                    "date_updated" => match NaiveDateTime::parse_from_str(rhs, "%Y-%m-%d %H:%M") {
+                        Ok(date_updated) => self.date_updated = date_updated,
+                        Err(_) => {
+                            site.errors.add_invalid_date_updated(self.get_filepath_as_str());
                         }
                     },
 
@@ -135,8 +121,16 @@ impl Frontmatter {
         return self.date_updated.format("%Y-%m-%d %H:%M").to_string();
     }
 
+    pub fn get_filepath_as_str(&self) -> String {
+        return self
+            .filepath
+            .clone()
+            .into_os_string()
+            .into_string()
+            .unwrap();
+    }
+
     pub fn date_created_str(&self) -> String {
         return self.date_updated.format("%Y-%m-%d %H:%M").to_string();
     }
-
 }

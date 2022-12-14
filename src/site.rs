@@ -2,7 +2,8 @@ use std::{path::PathBuf, env};
 use std::fs;
 
 use crate::util;
-use crate::{md_file::MdFile, frontmatter::Frontmatter};
+use crate::{md_file::MdFile, frontmatter::Frontmatter, errors::Errors};
+
 
 #[derive(Debug)]
 pub struct Site {
@@ -20,6 +21,8 @@ pub struct Site {
     pub dir_build: PathBuf,
     /// dir_vault - where all your markdown files are (your obsidian vault)
     dir_vault: PathBuf,
+    ///errorz
+    pub errors: Errors,
 }
 
 impl Site {
@@ -41,7 +44,9 @@ impl Site {
             dir_build: cwd.join("_site"),
             dir_vault: cwd,
 
-            baseurl: "foo.com".to_string()
+            baseurl: "foo.com".to_string(),
+            errors: Errors::new()
+
         };
 
         site.load_files();
@@ -54,13 +59,14 @@ impl Site {
     // Fetches all the file paths with a glob
     // then iterates over them and loads them into the struct's memory.
     pub fn load_files(&mut self) {
-        self.markdown_files_paths = util::load_files(&self.dir, "**/*.md");
+        // self.markdown_files_paths = util::load_files(&self.dir, "**/*.md");
+        let markdown_files_paths = util::load_files(&self.dir, "**/*.md");
         let mut markdown_files: Vec<MdFile> = Vec::new();
         let mut invalid_files: Vec<PathBuf> = Vec::new();
 
         // collect all files and their metadata.
-        self.markdown_files_paths.iter().for_each(|f| {
-            if let Some(fm) = Frontmatter::new(f) {
+        markdown_files_paths.iter().for_each(|f| {
+            if let Some(fm) = Frontmatter::new(self, f) {
                 let read_file = fs::read_to_string(f).expect("Unable to open file");
                 let md_file  = MdFile::new(self, read_file, f.to_path_buf(), fm);
                 markdown_files.push(md_file);
@@ -69,6 +75,7 @@ impl Site {
             }
         });
 
+        self.markdown_files_paths = markdown_files_paths;
         self.markdown_files = markdown_files;
         self.invalid_files = invalid_files;
 
@@ -76,6 +83,8 @@ impl Site {
         for mut f in &mut self.markdown_files {
             f.write_html();
         }
+
+        self.errors.report_errors();
     }
 
     pub fn build_with_baseurl(&self, web_path: String) -> String {
