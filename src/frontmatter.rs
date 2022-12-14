@@ -82,14 +82,16 @@ impl Frontmatter {
                     "date_created" => match NaiveDateTime::parse_from_str(rhs, "%Y-%m-%d %H:%M") {
                         Ok(date_created) => self.date_created = date_created,
                         Err(_) => {
-                            site.errors.add_invalid_date_created(self.get_filepath_as_str());
+                            site.errors
+                                .add_invalid_date_created(self.get_filepath_as_str());
                         }
                     },
 
                     "date_updated" => match NaiveDateTime::parse_from_str(rhs, "%Y-%m-%d %H:%M") {
                         Ok(date_updated) => self.date_updated = date_updated,
                         Err(_) => {
-                            site.errors.add_invalid_date_updated(self.get_filepath_as_str());
+                            site.errors
+                                .add_invalid_date_updated(self.get_filepath_as_str());
                         }
                     },
 

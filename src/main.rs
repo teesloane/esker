@@ -2,20 +2,19 @@
 #![allow(unused_mut)]
 #![allow(unused_variables)]
 
+pub mod errors;
+pub mod frontmatter;
+pub mod md_file;
 pub mod site;
 pub mod util;
-pub mod md_file;
-pub mod frontmatter;
-pub mod errors;
 
-use std::path::PathBuf;
 use clap::{Parser, Subcommand};
 use site::Site;
+use std::path::PathBuf;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 struct Cli {
-
     /// Directory of where you want to run esker
     #[arg(short, long, value_name = "DIR", global = true)]
     dir: Option<PathBuf>,
@@ -27,7 +26,7 @@ struct Cli {
 #[derive(Subcommand)]
 enum Commands {
     /// Build your site
-    Build
+    Build,
 }
 
 fn main() {

@@ -1,11 +1,11 @@
 use std::{fs, path::PathBuf};
 
-use std::io;
-use std::io::{BufRead, BufReader};
-use pulldown_cmark::{Parser, Options, html};
-use slugify::slugify;
 use crate::frontmatter::Frontmatter;
 use crate::site::Site;
+use pulldown_cmark::{html, Options, Parser};
+use slugify::slugify;
+use std::io;
+use std::io::{BufRead, BufReader};
 
 #[derive(Debug)]
 pub struct MdFile {
@@ -26,14 +26,19 @@ impl MdFile {
         // AS WELL as the "web_path" which is the part that follow your domain name: <mydomain.com>/this-is-the-web-path.
 
         // turns; /Users/tees/development/tees/esker/test-site/foo/bar.md" -> test-site/foo/
-        let web_parent_paths = path.strip_prefix(site.dir.clone()).unwrap().parent().unwrap();
+        let web_parent_paths = path
+            .strip_prefix(site.dir.clone())
+            .unwrap()
+            .parent()
+            .unwrap();
 
         let filename = path.file_stem().unwrap().to_str().unwrap().to_string();
         let mut out_file_path_slugified = slugify!(&filename);
         // takes slugified file name and adds html extension
         let web_path = PathBuf::from(out_file_path_slugified.clone()).with_extension("html");
         let web_path_str = web_path.clone().into_os_string().into_string().unwrap();
-        let out_path = PathBuf::from(&site.dir_build).join(web_parent_paths.join(PathBuf::from(&web_path)));
+        let out_path =
+            PathBuf::from(&site.dir_build).join(web_parent_paths.join(PathBuf::from(&web_path)));
 
         // now let's make the full url.
         let url_path = format!("{}{}", web_parent_paths.display(), web_path_str);
@@ -50,20 +55,20 @@ impl MdFile {
             frontmatter: fm,
         };
 
-        md_file.set_raw_contents().expect("Failed to set raw contents for file");
+        md_file
+            .set_raw_contents()
+            .expect("Failed to set raw contents for file");
         return md_file;
     }
 
     /// writes a file to it's specified output path.
     pub fn write_html(&mut self) {
-
         // parse the markdown for writing it. ---
         let mut options = Options::empty();
         options.insert(Options::ENABLE_STRIKETHROUGH);
         let parser = Parser::new_ext(&self.raw, options);
         let mut html_output = String::new();
         html::push_html(&mut html_output, parser);
-
 
         // write to file ----
         let prefix = &self.out_path.parent().unwrap();

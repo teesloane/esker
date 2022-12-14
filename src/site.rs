@@ -1,9 +1,8 @@
-use std::{path::PathBuf, env};
 use std::fs;
+use std::{env, path::PathBuf};
 
 use crate::util;
-use crate::{md_file::MdFile, frontmatter::Frontmatter, errors::Errors};
-
+use crate::{errors::Errors, frontmatter::Frontmatter, md_file::MdFile};
 
 #[derive(Debug)]
 pub struct Site {
@@ -45,15 +44,14 @@ impl Site {
             dir_vault: cwd,
 
             baseurl: "foo.com".to_string(),
-            errors: Errors::new()
-
+            errors: Errors::new(),
         };
 
         site.load_files();
 
         // println!("{:#?}", site);
 
-        return site
+        return site;
     }
 
     // Fetches all the file paths with a glob
@@ -68,7 +66,7 @@ impl Site {
         markdown_files_paths.iter().for_each(|f| {
             if let Some(fm) = Frontmatter::new(self, f) {
                 let read_file = fs::read_to_string(f).expect("Unable to open file");
-                let md_file  = MdFile::new(self, read_file, f.to_path_buf(), fm);
+                let md_file = MdFile::new(self, read_file, f.to_path_buf(), fm);
                 markdown_files.push(md_file);
             } else {
                 invalid_files.push(f.clone());
