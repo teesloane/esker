@@ -20,13 +20,24 @@ pub struct MdFile {
 
 impl MdFile {
     pub fn new(site: &Site, raw_str: String, path: PathBuf, fm: Frontmatter) -> MdFile {
-        // Life's too shore to write good code:
+        // Life's too short to write good code:
+
+        // Below we set up the file's "out" path for writing the eventual html file to disk
+        // AS WELL as the "web_path" which is the part that follow your domain name: <mydomain.com>/this-is-the-web-path.
+
+        // turns; /Users/tees/development/tees/esker/test-site/foo/bar.md" -> test-site/foo/
+        let web_parent_paths = path.strip_prefix(site.dir.clone()).unwrap().parent().unwrap();
+
         let filename = path.file_stem().unwrap().to_str().unwrap().to_string();
         let mut out_file_path_slugified = slugify!(&filename);
+        // takes slugified file name and adds html extension
         let web_path = PathBuf::from(out_file_path_slugified.clone()).with_extension("html");
         let web_path_str = web_path.clone().into_os_string().into_string().unwrap();
-        let out_path = PathBuf::from(&site.dir_build).join(PathBuf::from(&web_path));
-        let full_url = site.build_with_baseurl(web_path_str);
+        let out_path = PathBuf::from(&site.dir_build).join(web_parent_paths.join(PathBuf::from(&web_path)));
+
+        // now let's make the full url.
+        let url_path = format!("{}{}", web_parent_paths.display(), web_path_str);
+        let full_url = site.build_with_baseurl(url_path);
         // end bad code byeeee
 
         let mut md_file = MdFile {
