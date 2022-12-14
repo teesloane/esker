@@ -82,7 +82,9 @@ impl Site {
             f.write_html();
         }
 
-        self.errors.report_errors();
+        if self.errors.has_errors() {
+            self.errors.report_errors();
+        }
     }
 
     pub fn build_with_baseurl(&self, web_path: String) -> String {
