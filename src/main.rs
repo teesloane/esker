@@ -4,6 +4,7 @@
 
 pub mod errors;
 pub mod frontmatter;
+pub mod link;
 pub mod md_file;
 pub mod site;
 pub mod util;

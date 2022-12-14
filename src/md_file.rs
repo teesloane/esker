@@ -1,8 +1,9 @@
 use std::{fs, path::PathBuf};
 
 use crate::frontmatter::Frontmatter;
+use crate::link::Link;
 use crate::site::Site;
-use pulldown_cmark::{html, Options, Parser};
+use pulldown_cmark::{html, Event, Options, Parser, Tag};
 use slugify::slugify;
 use std::io;
 use std::io::{BufRead, BufReader};
@@ -38,10 +39,14 @@ impl MdFile {
         let web_path = PathBuf::from(out_file_path_slugified.clone()).with_extension("html");
         let web_path_str = web_path.clone().into_os_string().into_string().unwrap();
         let out_path =
-            PathBuf::from(&site.dir_build).join(web_parent_paths.join(PathBuf::from(&web_path)));
+            PathBuf::from(&site.dir_esker_build).join(web_parent_paths.join(PathBuf::from(&web_path)));
 
         // now let's make the full url.
-        let url_path = format!("{}{}", web_parent_paths.display(), web_path_str);
+        let url_path = PathBuf::from(web_parent_paths)
+            .join(web_path)
+            .into_os_string()
+            .into_string()
+            .unwrap();
         let full_url = site.build_with_baseurl(url_path);
         // end bad code byeeee
 
@@ -62,12 +67,29 @@ impl MdFile {
     }
 
     /// writes a file to it's specified output path.
-    pub fn write_html(&mut self) {
+    pub fn write_html(&mut self, site: &mut Site) {
         // parse the markdown for writing it. ---
         let mut options = Options::empty();
         options.insert(Options::ENABLE_STRIKETHROUGH);
-        let parser = Parser::new_ext(&self.raw, options);
+        options.insert(Options::ENABLE_FOOTNOTES);
+        let mut parser = Parser::new_ext(&self.raw, options);
         let mut html_output = String::new();
+
+        let parser = parser.map(|event| -> Event {
+            match event {
+                Event::Start(tag) => match tag {
+                    Tag::Link(link_type, url, title) => {
+                        Event::Start(Link::update_link(link_type, url, title, site))
+                    }
+                    Tag::Image(link_type, url, title) => {
+                        Event::Start(Link::update_img_link(link_type, url, title, site))
+                    }
+                    _ => Event::Start(tag),
+                },
+                _ => event,
+            }
+        });
+
         html::push_html(&mut html_output, parser);
 
         // write to file ----
