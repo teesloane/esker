@@ -29,9 +29,6 @@ pub struct Site {
     dir_esker_public: PathBuf,
     /// where static will go in _site.
     dir_esker_build_public: PathBuf,
-
-    /// dir_vault - where all your markdown files are (your obsidian vault)
-    dir_vault: PathBuf,
     ///errorz
     pub errors: Errors,
 }
@@ -52,8 +49,6 @@ impl Site {
             markdown_files_paths: Vec::new(),
             markdown_files: Vec::new(),
             invalid_files: Vec::new(),
-            // TODO: make it possible to pass custom dir.
-            dir_vault: cwd.clone(),
             dir_attachments: cwd.join("attachments"),
             dir_esker_build: esker_dir.join("_site"),
             dir_esker_build_attachments: esker_dir.join("_site/attachments"),
