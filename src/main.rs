@@ -28,14 +28,18 @@ struct Cli {
 enum Commands {
     /// Build your site
     Build,
+    New
 }
 
 fn main() {
     let cli = Cli::parse();
 
     match &cli.command {
+        Some(Commands::New) => {
+            let s = Site::init(cli.dir);
+        }
         Some(Commands::Build) => {
-            let s = Site::new(cli.dir);
+            let s = Site::build(cli.dir);
             // println!("{:#?}", s);
         }
         None => {}
