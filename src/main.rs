@@ -8,6 +8,7 @@ pub mod link;
 pub mod md_file;
 pub mod site;
 pub mod util;
+pub mod templates;
 
 use clap::{Parser, Subcommand};
 use site::Site;
@@ -40,7 +41,6 @@ fn main() {
         }
         Some(Commands::Build) => {
             let s = Site::build(cli.dir);
-            // println!("{:#?}", s);
         }
         None => {}
     }

@@ -21,6 +21,8 @@ pub struct Site {
     pub baseurl: String,
     /// esker directory that gets generated in the vault: _esker
     pub dir_esker: PathBuf,
+    /// esker directory for templates
+    pub dir_esker_templates: PathBuf,
     /// out_path: _esker/_site
     pub dir_esker_build: PathBuf,
     /// where users stores their attachments: <my_vault>/attachments
@@ -33,6 +35,8 @@ pub struct Site {
     dir_esker_build_public: PathBuf,
     ///errorz
     pub errors: Errors,
+    pub tera: tera::Tera
+
 }
 
 impl Site {
@@ -46,6 +50,7 @@ impl Site {
         }
 
         let esker_dir = cwd.clone().join("_esker");
+        let esker_dir_templates = esker_dir.join("templates");
 
         let mut site = Site {
             dir: cwd.clone(),
@@ -53,6 +58,7 @@ impl Site {
             markdown_files: Vec::new(),
             invalid_files: Vec::new(),
             dir_attachments: cwd.join("attachments"),
+            dir_esker_templates: esker_dir_templates.clone(),
             dir_esker_build: esker_dir.join("_site"),
             dir_esker_build_attachments: esker_dir.join("_site/attachments"),
             dir_esker_public: esker_dir.join("public"),
@@ -60,11 +66,14 @@ impl Site {
             dir_esker: esker_dir,
             baseurl: "http://127.0.0.1:8080".to_string(),
             errors: Errors::new(),
+            tera: crate::templates::load_templates(&esker_dir_templates)
         };
 
         site.create_required_directories_for_build();
         site.load_files();
         site.cp_data();
+        site.cp_public();
+
         return site;
     }
 
@@ -89,14 +98,14 @@ impl Site {
     }
 
 
-    pub fn cp_static(&mut self) {
+    pub fn cp_public(&mut self) {
         // for some reason I need to create _site/dest so cp works...
         create_dir_all(self.dir_esker_build_public.clone()).unwrap();
         Command::new("cp")
             .arg("-n")
             .arg("-r")
             .arg(self.dir_esker_public.display().to_string())
-            .arg(self.dir_esker_build_public.display().to_string())
+            .arg(self.dir_esker_build.display().to_string())
             .output()
             .expect("Internal error: failed to copy data directory to _site.");
     }
@@ -138,7 +147,6 @@ impl Site {
         return format!("{}/{}", self.baseurl, web_path);
     }
 
-
     // -- New Site generation
 
     // creates an _esker site and template files
@@ -155,18 +163,18 @@ impl Site {
     if fs::metadata(&dir_esker).is_ok() {
         println!("{}: An '_esker' site already exists in this directory.", " Failed ".yellow().on_black());
     } else {
-        let dirs = vec!["layouts/",
-                        "layouts/partials",
+        let dirs = vec!["templates/",
+                        "templates/partials",
                         "sass",
                         "public/css",
                         "public/js",
                         "_site"];
 
         let mut files = HashMap::new();
-        files.insert(String::from("layouts/partials/head.html"), PARTIAL_HEAD);
+        files.insert(String::from("templates/partials/head.html"), PARTIAL_HEAD);
         files.insert(String::from("public/js/main.js"), DEFAULT_JS);
         files.insert(String::from("public/css/main.css"), DEFAULT_CSS);
-        files.insert(String::from("layouts/default.html"), DEFAULT_HTML);
+        files.insert(String::from("templates/default.html"), DEFAULT_HTML);
         files.insert(String::from("config.yaml"), CONFIG_YAML);
 
         // Map over the above strings, turn them into paths, and create them.
@@ -202,23 +210,23 @@ site:
 const PARTIAL_HEAD: &str = r#"<html>
   <head>
     <meta charset="utf-8">
-    <title>{{ title }} - My Site</title>
+    <title>My Site</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-    <script src="{{config.site.url}}/public/js/main.js"></script>
-    <link rel="stylesheet" href="{{config.site.url}}/public/css/main.css" type="text/css" media="screen" />
+    <script src="{{baseurl}}/public/js/main.js"></script>
+    <link rel="stylesheet" href="{{baseurl}}/public/css/main.css" type="text/css" media="screen" />
     <style>
     </style>
   </head>
 "#;
 
 
-const DEFAULT_HTML: &str = r#"{% import "macros.html" as macros %}
+const DEFAULT_HTML: &str = r#"
 <html>
   {% include "partials/head.html" %}
   <body style="display: flex;">
     <main>
-      {{render()}}
+      {{content}}
     </main>
   </body>
 </html>
@@ -230,7 +238,7 @@ const DEFAULT_JS: &str = r#"
 const DEFAULT_CSS: &str = r#"body{
   color: #333;
   background: #efefef;
-  max-width: 800px;
+  max-width: 600px;
   margin: 0 auto;
 }
 

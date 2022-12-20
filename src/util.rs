@@ -32,3 +32,12 @@ pub fn get_time_in_ms(s: SystemTime) -> std::time::Duration {
     let since_the_epoch = s.duration_since(UNIX_EPOCH).expect("Time went backwards");
     since_the_epoch
 }
+
+
+pub fn exit() -> ! {
+    std::process::exit(1);
+}
+
+pub fn path_to_string(p: &Path) -> String {
+    p.display().to_string()
+}

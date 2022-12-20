@@ -6,13 +6,14 @@ use std::path::PathBuf;
 
 #[derive(Debug)]
 pub struct Frontmatter {
-    title: String,
+    pub title: String,
     filepath: PathBuf,
-    summary: Option<String>,
-    tags: Vec<String>,
-    published: bool,
-    date_created: NaiveDateTime,
-    date_updated: NaiveDateTime,
+    pub summary: Option<String>,
+    pub tags: Vec<String>,
+    pub published: bool,
+    pub date_created: NaiveDateTime,
+    pub date_updated: NaiveDateTime,
+    pub template: String,
 }
 
 impl Frontmatter {
@@ -39,6 +40,7 @@ impl Frontmatter {
             summary: None,
             published: true,
             tags: Vec::new(),
+            template: String::from(""),
         };
         let mut capturing = false;
 
@@ -98,7 +100,9 @@ impl Frontmatter {
                     "summary" => {
                         self.summary = Some(rhs.to_string());
                     }
-
+                    "template" => {
+                        self.template = rhs.to_string();
+                    }
                     "published" => {
                         self.published = if rhs == "false" { false } else { true };
                     }

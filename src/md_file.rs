@@ -3,8 +3,10 @@ use std::{fs, path::PathBuf};
 use crate::frontmatter::Frontmatter;
 use crate::link::Link;
 use crate::site::Site;
+use crate::templates;
 use pulldown_cmark::{html, Event, Options, Parser, Tag};
 use slugify::slugify;
+use tera::Context;
 use std::io;
 use std::io::{BufRead, BufReader};
 
@@ -66,6 +68,7 @@ impl MdFile {
         return md_file;
     }
 
+
     /// writes a file to it's specified output path.
     pub fn write_html(&mut self, site: &mut Site) {
         // parse the markdown for writing it. ---
@@ -74,6 +77,8 @@ impl MdFile {
         options.insert(Options::ENABLE_FOOTNOTES);
         let mut parser = Parser::new_ext(&self.raw, options);
         let mut html_output = String::new();
+
+        // -- parser stuff
 
         let parser = parser.map(|event| -> Event {
             match event {
@@ -90,13 +95,22 @@ impl MdFile {
             }
         });
 
+        //
+        // -- tera stuff
+        //
         html::push_html(&mut html_output, parser);
+        let mut ctx = Context::new();
+        ctx.insert("title", &self.frontmatter.title);
+        ctx.insert("baseurl", &site.baseurl.clone());
+        ctx.insert("content", &html_output);
+        let template_name = templates::get_name(&site.tera, &self.frontmatter.template);
+        let rendered_template = site.tera.render(&template_name, &ctx).unwrap();
 
-        // write to file ----
+        // -- write to file ----
         let prefix = &self.out_path.parent().unwrap();
         fs::create_dir_all(prefix).unwrap();
         let mut file = fs::File::create(&self.out_path).expect("couldn't create file");
-        fs::write(&self.out_path, html_output).expect("Unable to write file");
+        fs::write(&self.out_path, rendered_template).expect("Unable to write file");
     }
 
     pub fn parse_md_to_html(&mut self) {
