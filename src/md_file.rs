@@ -17,7 +17,7 @@ pub struct MdFile {
     path: PathBuf,
     web_path: PathBuf,
     out_path: PathBuf,
-    frontmatter: Frontmatter,
+    pub frontmatter: Frontmatter,
     full_url: String,
 }
 
@@ -99,12 +99,7 @@ impl MdFile {
         // -- tera stuff
         //
         html::push_html(&mut html_output, parser);
-        let mut ctx = Context::new();
-        ctx.insert("title", &self.frontmatter.title);
-        ctx.insert("baseurl", &site.baseurl.clone());
-        ctx.insert("content", &html_output);
-        let template_name = templates::get_name(&site.tera, &self.frontmatter.template);
-        let rendered_template = site.tera.render(&template_name, &ctx).unwrap();
+        let rendered_template = self.render_with_tera(site, &html_output);
 
         // -- write to file ----
         let prefix = &self.out_path.parent().unwrap();
@@ -113,13 +108,15 @@ impl MdFile {
         fs::write(&self.out_path, rendered_template).expect("Unable to write file");
     }
 
-    pub fn parse_md_to_html(&mut self) {
-        let mut options = Options::empty();
-        options.insert(Options::ENABLE_STRIKETHROUGH);
-        let parser = Parser::new_ext(&self.raw, options);
-        let mut html_output = String::new();
-        html::push_html(&mut html_output, parser);
-        self.html = html_output;
+    /// sets up the tera context, and renders the file with
+    fn render_with_tera(&self, site: &mut Site, html_output: &String) -> String {
+        let mut ctx = Context::new();
+        ctx.insert("title", &self.frontmatter.title);
+        ctx.insert("baseurl", &site.config.url.clone());
+        ctx.insert("content", &html_output);
+        let template_name = templates::get_name(&site.tera, &self.frontmatter.template);
+        let rendered_template = site.tera.render(&template_name, &ctx).unwrap();
+        return rendered_template;
     }
 
     /// sets the "raw" contents field for the md_file to be the file without the frontmatter.

@@ -10,7 +10,7 @@ pub struct Frontmatter {
     filepath: PathBuf,
     pub summary: Option<String>,
     pub tags: Vec<String>,
-    pub published: bool,
+    pub publish: bool,
     pub date_created: NaiveDateTime,
     pub date_updated: NaiveDateTime,
     pub template: String,
@@ -38,7 +38,7 @@ impl Frontmatter {
             date_created,
             date_updated,
             summary: None,
-            published: true,
+            publish: true,
             tags: Vec::new(),
             template: String::from(""),
         };
@@ -103,8 +103,8 @@ impl Frontmatter {
                     "template" => {
                         self.template = rhs.to_string();
                     }
-                    "published" => {
-                        self.published = if rhs == "false" { false } else { true };
+                    "publish" => {
+                        self.publish = if rhs == "false" { false } else { true };
                     }
 
                     "tag" | "tags" => {

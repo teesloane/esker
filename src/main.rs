@@ -9,6 +9,7 @@ pub mod md_file;
 pub mod site;
 pub mod util;
 pub mod templates;
+pub mod config;
 
 use clap::{Parser, Subcommand};
 use site::Site;
