@@ -4,8 +4,11 @@ use std::fs;
 use std::process::Command;
 use std::{env, fs::create_dir_all, path::PathBuf};
 
+// use crate::link::SiteLinks;
 use crate::{config::Config, util};
 use crate::{errors::Errors, frontmatter::Frontmatter, md_file::MdFile};
+
+
 
 #[derive(Debug)]
 pub struct Site {
@@ -31,6 +34,8 @@ pub struct Site {
     pub errors: Errors,
     /// templating enginge
     pub tera: tera::Tera,
+    /// links: internal and external
+    // pub links: SiteLinks,
     /// user config stuff
     pub config: Config,
 }
@@ -61,13 +66,13 @@ impl Site {
             errors: Errors::new(),
             tera: crate::templates::load_templates(&esker_dir_templates),
             config: user_config,
+            // links: SiteLinks::new()
         };
 
         site.create_required_directories_for_build();
         site.load_files();
         site.cp_data();
         site.cp_public();
-
         return site;
     }
 
@@ -134,6 +139,12 @@ impl Site {
             }
         });
 
+        for mut f in &mut markdown_files {
+            if f.frontmatter.publish {
+              f.collect_metadata(self);
+            }
+        }
+
         // for each file, now that we have global data...render out their html
         for mut f in &mut markdown_files {
             if f.frontmatter.publish {
@@ -153,6 +164,14 @@ impl Site {
     pub fn build_with_baseurl(&self, web_path: String) -> String {
         return format!("{}/{}", self.config.url, web_path);
     }
+
+    // pub fn add_link(&mut self, link: Link) {
+    //     if link.is_internal {
+    //         self.links.internal.push(link)
+    //     } else {
+    //         self.links.external.push(link)
+    //     }
+    // }
 
     /// filter out files that are in the private folder.
     pub fn is_in_private_folder(&self, file_source: &PathBuf) -> bool {

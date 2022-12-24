@@ -6,9 +6,9 @@ use crate::site::Site;
 use crate::templates;
 use pulldown_cmark::{html, Event, Options, Parser, Tag};
 use slugify::slugify;
-use tera::Context;
 use std::io;
 use std::io::{BufRead, BufReader};
+use tera::Context;
 
 #[derive(Debug)]
 pub struct MdFile {
@@ -40,8 +40,8 @@ impl MdFile {
         // takes slugified file name and adds html extension
         let web_path = PathBuf::from(out_file_path_slugified.clone()).with_extension("html");
         let web_path_str = web_path.clone().into_os_string().into_string().unwrap();
-        let out_path =
-            PathBuf::from(&site.dir_esker_build).join(web_parent_paths.join(PathBuf::from(&web_path)));
+        let out_path = PathBuf::from(&site.dir_esker_build)
+            .join(web_parent_paths.join(PathBuf::from(&web_path)));
 
         // now let's make the full url.
         let url_path = PathBuf::from(web_parent_paths)
@@ -68,9 +68,8 @@ impl MdFile {
         return md_file;
     }
 
-
-    /// writes a file to it's specified output path.
-    pub fn write_html(&mut self, site: &mut Site) {
+    /// collect links, tags, etc so that they are available the next pass when we render.
+    pub fn collect_metadata(&mut self, site: &mut Site) {
         // parse the markdown for writing it. ---
         let mut options = Options::empty();
         options.insert(Options::ENABLE_STRIKETHROUGH);
@@ -94,14 +93,13 @@ impl MdFile {
                 _ => event,
             }
         });
-
-        //
-        // -- tera stuff
-        //
         html::push_html(&mut html_output, parser);
-        let rendered_template = self.render_with_tera(site, &html_output);
+        self.html = html_output;
+    }
 
-        // -- write to file ----
+    /// writes a file to it's specified output path.
+    pub fn write_html(&mut self, site: &mut Site) {
+        let rendered_template = self.render_with_tera(site, &self.html);
         let prefix = &self.out_path.parent().unwrap();
         fs::create_dir_all(prefix).unwrap();
         let mut file = fs::File::create(&self.out_path).expect("couldn't create file");
