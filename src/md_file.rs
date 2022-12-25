@@ -79,17 +79,50 @@ impl MdFile {
 
         // -- parser stuff
 
+        // HACK: when the parser captures links everything [<in between brackets](<my link url>)
+        // doesn't actually get captured - instead, what's in betwene [the brackets], is
+        // just a text node. So, we need to do some capturing to collect links with proper titles"
+        let mut capturing = false;
+        let mut link = Link::empty();
         let parser = parser.map(|event| -> Event {
             match event {
                 Event::Start(tag) => match tag {
+                    // TODO: don't pass so many values, find a way to pas tag... as ref?
+                    // TODO: I don't know what as_ref even is.
                     Tag::Link(link_type, url, title) => {
-                        Event::Start(Link::update_link(link_type, url, title, site))
+                        link.update_vals(
+                            link_type,
+                            url.to_string(),
+                            title.to_string(),
+                            site,
+                            self.full_url.clone(),
+                            self.frontmatter.title.clone(),
+                        );
+                        capturing = true;
+                        Event::Start(link.for_parser(site))
                     }
                     Tag::Image(link_type, url, title) => {
                         Event::Start(Link::update_img_link(link_type, url, title, site))
                     }
                     _ => Event::Start(tag),
                 },
+
+                Event::Text(text) => {
+                    if capturing {
+                        link.title = text.to_string();
+                        capturing = false
+                    }
+                    Event::Text(text)
+                }
+
+                Event::End(tag) => match tag {
+                    Tag::Link(link_type, url, title) => {
+                        site.add_link(link.clone());
+                        Event::End(Tag::Link(link_type, url, title))
+                    }
+                    _ => Event::End(tag),
+                },
+
                 _ => event,
             }
         });
@@ -112,9 +145,22 @@ impl MdFile {
         ctx.insert("title", &self.frontmatter.title);
         ctx.insert("baseurl", &site.config.url.clone());
         ctx.insert("content", &html_output);
+        ctx.insert("backlinks", &self.get_backlinks_for_file(site));
         let template_name = templates::get_name(&site.tera, &self.frontmatter.template);
         let rendered_template = site.tera.render(&template_name, &ctx).unwrap();
         return rendered_template;
+    }
+
+    fn get_backlinks_for_file(&self, site: &mut Site) -> Vec<Link> {
+        let mut out: Vec<Link> = Vec::new();
+        for g_link in &site.links.internal {
+            if g_link.url == self.full_url && self.full_url != g_link.originating_file_url {
+                if !out.contains(&g_link) {
+                    out.push(g_link.clone());
+                }
+            }
+        }
+        out
     }
 
     /// sets the "raw" contents field for the md_file to be the file without the frontmatter.

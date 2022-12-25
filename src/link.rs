@@ -1,13 +1,32 @@
 use crate::site::Site;
 use pulldown_cmark::{CowStr, LinkType, Tag};
-use std::path::PathBuf;
 use slugify::slugify;
+use std::path::PathBuf;
 
+use serde::Serialize;
+
+#[derive(Debug)]
+pub struct SiteLinks {
+    pub external: Vec<Link>,
+    pub internal: Vec<Link>,
+}
+
+impl SiteLinks {
+    pub fn new() -> SiteLinks {
+        SiteLinks {
+            external: Vec::new(),
+            internal: Vec::new(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct Link {
-    // link_type: LinkType,
-    // originating_file_title: String,
-    // originating_file_path: String,
-    // original_extension: String,
+    pub url: String,
+    pub is_internal: bool,
+    pub title: String,
+    pub originating_file_title: String,
+    pub originating_file_url: String
 }
 
 // TODO: this could probably be grouped in a file with the parser for better organizations.
@@ -18,38 +37,69 @@ pub struct Link {
 // then matching on that. It worked almost perfectly except that I ran into
 // borrow issues because of "partial borrows" ....
 impl Link {
-    // takes a text link and updates it to add the base url if it's internal.
-    pub fn update_link<'a>(
+    pub fn update_vals(
+        &mut self,
         link_type: LinkType,
-        url: CowStr<'a>,
-        title: CowStr<'a>,
+        url: String,
+        title: String,
         site: &mut Site,
-    ) -> Tag<'a> {
-        let mut url_str = Self::slugify_internal_url(url.to_string());
-        if Self::is_internal(&url_str) {
+        originating_url: String,
+        originating_title: String
+    ) {
+        let mut url_str = Self::slugify_internal_url(url.clone());
+        if Self::is_internal(&url) {
             let url_as_path = PathBuf::from(&url_str).with_extension("html");
             url_str = format!("{}", url_as_path.display());
-            let new_link_url: CowStr = site.build_with_baseurl(url_str).into();
-            return Tag::Link(link_type, new_link_url, title);
+            let new_link_url = site.build_with_baseurl(url_str);
+
+            self.url = new_link_url;
+            self.is_internal = true;
         } else {
-            return Tag::Link(link_type, url, title);
+            self.url = url;
+            self.is_internal = false;
         }
+
+        // self.link_type = link_type;
+        self.title = title;
+        self.originating_file_title = originating_title;
+        self.originating_file_url = originating_url
+    }
+
+    pub fn empty() -> Link {
+        Link {
+            url: String::from(""),
+            is_internal: false,
+            // link_type: LinkType::Inline,
+            title: String::from(""),
+            originating_file_url: String::from(""),
+            originating_file_title: String::from(""),
+        }
+    }
+
+    // takes a text link and updates it to add the base url if it's internal.
+    pub fn for_parser<'a>(&self, site: &mut Site) -> Tag<'a> {
+        let new_link_url: CowStr = self.url.clone().into();
+        let title: CowStr = site.build_with_baseurl(self.url.clone()).into();
+        return Tag::Link(LinkType::Inline, new_link_url, title);
     }
 
     // split a url: "projects/my_folder/a file"
     // get the last and slug it and rebuild the url.
     fn slugify_internal_url(url: String) -> String {
         let chunks: Vec<_> = url.split("/").collect();
-        let slug_chunks: Vec<String> = chunks.iter().map(|s| {
-            let url_as_path = PathBuf::from(s).with_extension("");
-            let url_as_string = url_as_path.into_os_string().into_string().unwrap();
+        let slug_chunks: Vec<String> = chunks
+            .iter()
+            .map(|s| {
+                let url_as_path = PathBuf::from(s).with_extension("");
+                let url_as_string = url_as_path.into_os_string().into_string().unwrap();
 
-            // replace all `%20` with `-`
-            let new_str = url_as_string.replace("%20", "-");
-            return slugify!(&new_str);
-        }).collect();
+                // replace all `%20` with `-`
+                let new_str = url_as_string.replace("%20", "-");
+                return slugify!(&new_str);
+            })
+            .collect();
         let rebuild_url = slug_chunks.join("/");
-        return rebuild_url
+        return rebuild_url;
     }
 
     pub fn update_img_link<'a>(

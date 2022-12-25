@@ -6,9 +6,7 @@ use std::{env, fs::create_dir_all, path::PathBuf};
 
 // use crate::link::SiteLinks;
 use crate::{config::Config, util};
-use crate::{errors::Errors, frontmatter::Frontmatter, md_file::MdFile};
-
-
+use crate::{errors::Errors, frontmatter::Frontmatter, link::{Link, SiteLinks}, md_file::MdFile};
 
 #[derive(Debug)]
 pub struct Site {
@@ -35,7 +33,7 @@ pub struct Site {
     /// templating enginge
     pub tera: tera::Tera,
     /// links: internal and external
-    // pub links: SiteLinks,
+    pub links: SiteLinks,
     /// user config stuff
     pub config: Config,
 }
@@ -66,13 +64,14 @@ impl Site {
             errors: Errors::new(),
             tera: crate::templates::load_templates(&esker_dir_templates),
             config: user_config,
-            // links: SiteLinks::new()
+            links: SiteLinks::new()
         };
 
         site.create_required_directories_for_build();
         site.load_files();
         site.cp_data();
         site.cp_public();
+
         return site;
     }
 
@@ -141,14 +140,14 @@ impl Site {
 
         for mut f in &mut markdown_files {
             if f.frontmatter.publish {
-              f.collect_metadata(self);
+                f.collect_metadata(self);
             }
         }
 
         // for each file, now that we have global data...render out their html
         for mut f in &mut markdown_files {
             if f.frontmatter.publish {
-              f.write_html(self);
+                f.write_html(self);
             }
         }
 
@@ -165,13 +164,14 @@ impl Site {
         return format!("{}/{}", self.config.url, web_path);
     }
 
-    // pub fn add_link(&mut self, link: Link) {
-    //     if link.is_internal {
-    //         self.links.internal.push(link)
-    //     } else {
-    //         self.links.external.push(link)
-    //     }
-    // }
+    pub fn add_link(&mut self, link: Link) {
+        // println!("{:#?}", link);
+        if link.is_internal {
+            self.links.internal.push(link)
+        } else {
+            self.links.external.push(link)
+        }
+    }
 
     /// filter out files that are in the private folder.
     pub fn is_in_private_folder(&self, file_source: &PathBuf) -> bool {
@@ -280,9 +280,24 @@ const DEFAULT_HTML: &str = r#"
   {% include "partials/head.html" %}
   <body style="display: flex;">
     <main>
+      <h1> {{title}}</h1>
+
       {{content}}
+
+      {% if backlinks | length > 0 %}
+      <h2> Backlinks </h2>
+      <ul>
+      {% for bl in backlinks %}
+        <li><a href="{{bl.originating_file_url}}">{{bl.originating_file_title}}</a></li>
+      {% endfor %}
+      </ul>
+      {% endif %}
     </main>
   </body>
+
+  <script>
+    window.x = {{__tera_context}};
+  </script>
 </html>
 "#;
 
@@ -291,9 +306,22 @@ const DEFAULT_JS: &str = r#"
 
 const DEFAULT_CSS: &str = r#"body{
   color: #333;
-  background: #efefef;
-  max-width: 600px;
+  background: #fff;
+  max-width: 48em;
   margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  font-family: "Charter", Arial;
+  padding: 64px 0;
+
+}
+
+
+pre {
+  overflow: scroll;
+  border: 1px solid #dfdfdf;
+  padding: 16px;
+  margin: 24px 0;
 }
 
 section {
@@ -304,5 +332,5 @@ ul, ol {
   padding-left: 16px;
 }
 
-img { max-width: 600px; }
+img { max-width: 100%; }
 "#;
