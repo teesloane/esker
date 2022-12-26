@@ -87,13 +87,9 @@ impl MdFile {
         let parser = parser.map(|event| -> Event {
             match event {
                 Event::Start(tag) => match tag {
-                    // TODO: don't pass so many values, find a way to pas tag... as ref?
-                    // TODO: I don't know what as_ref even is.
-                    Tag::Link(link_type, url, title) => {
+                    Tag::Link(link_type, ref url, ref title) => {
                         link.update_vals(
-                            link_type,
-                            url.to_string(),
-                            title.to_string(),
+                            tag,
                             site,
                             self.full_url.clone(),
                             self.frontmatter.title.clone(),

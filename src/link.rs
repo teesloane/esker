@@ -39,14 +39,15 @@ pub struct Link {
 impl Link {
     pub fn update_vals(
         &mut self,
-        link_type: LinkType,
-        url: String,
-        title: String,
+        tag: Tag,
         site: &mut Site,
         originating_url: String,
         originating_title: String
     ) {
-        let mut url_str = Self::slugify_internal_url(url.clone());
+        match tag {
+            Tag::Link(link_type, url, title) => {
+
+        let mut url_str = Self::slugify_internal_url(url.to_string().clone());
         if Self::is_internal(&url) {
             let url_as_path = PathBuf::from(&url_str).with_extension("html");
             url_str = format!("{}", url_as_path.display());
@@ -55,21 +56,24 @@ impl Link {
             self.url = new_link_url;
             self.is_internal = true;
         } else {
-            self.url = url;
+            self.url = url.to_string();
             self.is_internal = false;
         }
 
-        // self.link_type = link_type;
-        self.title = title;
+        self.title = title.to_string();
         self.originating_file_title = originating_title;
         self.originating_file_url = originating_url
+
+            }
+            _ => panic!()
+        }
+
     }
 
     pub fn empty() -> Link {
         Link {
             url: String::from(""),
             is_internal: false,
-            // link_type: LinkType::Inline,
             title: String::from(""),
             originating_file_url: String::from(""),
             originating_file_title: String::from(""),
