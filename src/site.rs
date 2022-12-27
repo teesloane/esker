@@ -316,6 +316,15 @@ const DEFAULT_CSS: &str = r#"body{
 
 }
 
+.footnote-definition {
+  display: flex;
+  align-items: baseline;
+}
+
+.footnote-definition-label {
+  margin-right: 16px;
+}
+
 
 pre {
   overflow: scroll;
