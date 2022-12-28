@@ -1,6 +1,7 @@
 use std::path::Path;
+use serde::Serialize;
 use tera::Tera;
-use crate::util;
+use crate::{util, link::Link, md_file::MdFile};
 
 pub fn load_templates(dir_templates: &Path) -> Tera {
     let template_path = format!("{}/**/*.html", util::path_to_string(dir_templates));
@@ -30,5 +31,49 @@ pub fn get_name(tera: &Tera, template: &str) -> String {
         return template_with_html;
     } else {
         return default_template_name
+    }
+}
+
+
+// Structs for tera
+//
+
+#[derive(Serialize)]
+pub struct Page<'a> {
+    content: &'a String,
+    title: &'a String,
+    backlinks: &'a Vec<Link>,
+    url: &'a String,
+    summary: &'a Option<String>,
+    date_created: String
+}
+
+impl Page<'_> {
+    pub fn new(md_file: &MdFile) -> Page {
+        Page {
+            content: &md_file.html,
+            title: &md_file.frontmatter.title,
+            backlinks: &md_file.backlinks,
+            url: &md_file.full_url,
+            summary: &md_file.frontmatter.summary,
+            date_created: md_file.frontmatter.date_created_str(),
+        }
+    }
+}
+
+// /// A trimmed down version of MDFile, to be accessed in section files (_index.md)
+
+#[derive(Serialize)]
+pub struct SectionPage<'a> {
+  // front_matter: Frontmatter
+  // file_url:  String,
+  pages: Vec<Page<'a>>
+}
+
+impl SectionPage<'_> {
+    pub fn new(pages: Vec<Page>) -> SectionPage {
+        SectionPage {
+            pages
+        }
     }
 }

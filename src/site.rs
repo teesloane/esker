@@ -6,7 +6,12 @@ use std::{env, fs::create_dir_all, path::PathBuf};
 
 // use crate::link::SiteLinks;
 use crate::{config::Config, util};
-use crate::{errors::Errors, frontmatter::Frontmatter, link::{Link, SiteLinks}, md_file::MdFile};
+use crate::{
+    errors::Errors,
+    frontmatter::Frontmatter,
+    link::{Link, SiteLinks},
+    md_file::MdFile,
+};
 
 #[derive(Debug)]
 pub struct Site {
@@ -15,8 +20,8 @@ pub struct Site {
     /// a list of markdown paths to process
     markdown_files_paths: Vec<PathBuf>,
     /// markdown as a struct of data and metadata
-    markdown_files: Vec<MdFile>,
-    /// files that have invalid frontmatter:=
+    pub markdown_files: HashMap<PathBuf, Vec<MdFile>>,
+    /// files that have invalid frontmatter:
     invalid_files: Vec<PathBuf>,
     /// esker directory that gets generated in the vault: _esker
     pub dir_esker: PathBuf,
@@ -54,7 +59,7 @@ impl Site {
         let mut site = Site {
             dir: cwd.clone(),
             markdown_files_paths: Vec::new(),
-            markdown_files: Vec::new(),
+            markdown_files: HashMap::new(),
             invalid_files: Vec::new(),
             dir_esker_templates: esker_dir_templates.clone(),
             dir_esker_build: esker_dir.join("_site"),
@@ -64,7 +69,7 @@ impl Site {
             errors: Errors::new(),
             tera: crate::templates::load_templates(&esker_dir_templates),
             config: user_config,
-            links: SiteLinks::new()
+            links: SiteLinks::new(),
         };
 
         site.create_required_directories_for_build();
@@ -117,40 +122,60 @@ impl Site {
     // Fetches all the file paths with a glob
     // then iterates over them and loads them into the struct's memory.
     pub fn load_files(&mut self) {
-        // self.markdown_files_paths = util::load_files(&self.dir, "**/*.md");
         let markdown_files_paths = util::load_files(&self.dir, "**/*.md");
 
         let markdown_files_paths_filtered: Vec<_> = markdown_files_paths
             .iter()
             .filter(|f| self.is_in_private_folder(f))
             .collect();
-        let mut markdown_files: Vec<MdFile> = Vec::new();
+        let mut markdown_files: HashMap<PathBuf, Vec<MdFile>> = HashMap::new();
         let mut invalid_files: Vec<PathBuf> = Vec::new();
 
-        // collect all files and their metadata.
+        // collect all files and push them into the map.
         markdown_files_paths_filtered.iter().for_each(|f| {
             if let Some(fm) = Frontmatter::new(self, f) {
                 let read_file = fs::read_to_string(f).expect("Unable to open file");
                 let md_file = MdFile::new(self, read_file, f.to_path_buf(), fm);
-                markdown_files.push(md_file);
+
+                if md_file.frontmatter.publish {
+                    if let Some(vec_of_files) = markdown_files.get_mut(&md_file.web_path_parents) {
+                        vec_of_files.push(md_file);
+                    } else {
+                        markdown_files.insert(md_file.web_path_parents.clone(), vec![md_file]);
+                    }
+                }
             } else {
                 invalid_files.push(f.to_path_buf().clone());
             }
         });
 
-        for mut f in &mut markdown_files {
-            if f.frontmatter.publish {
-                f.collect_metadata(self);
+        // Loop #1 - Let's get all the metadata, for things like backlinks, tags, etc.
+
+        for (path, vec_md_files) in &mut markdown_files {
+            for f in vec_md_files {
+                if f.frontmatter.publish {
+                    f.collect_metadata(self);
+                }
             }
         }
 
-        // for each file, now that we have global data...render out their html
-        for mut f in &mut markdown_files {
-            if f.frontmatter.publish {
-                f.write_html(self);
+        // TODO: not sure how to not have to clone this.
+        let markdown_files_clone = markdown_files.clone();
+
+        // Loop #2 - Let's render it!
+        for (path, vec_md_files) in &markdown_files {
+            for f in vec_md_files {
+                if f.frontmatter.publish {
+                    if f.is_section {
+                        f.write_section_html(self, &markdown_files_clone);
+                    } else {
+                        f.write_html(self);
+                    }
+                }
             }
         }
 
+        // on completion, we can now store the temporary data structures into self for future ref.
         self.markdown_files_paths = markdown_files_paths;
         self.markdown_files = markdown_files;
         self.invalid_files = invalid_files;
@@ -164,8 +189,8 @@ impl Site {
         return format!("{}/{}", self.config.url, web_path);
     }
 
+    // used to add links to the internal global links list.
     pub fn add_link(&mut self, link: Link) {
-        // println!("{:#?}", link);
         if link.is_internal {
             self.links.internal.push(link)
         } else {
@@ -259,7 +284,7 @@ description: "My Site Description"
 attachment_directory: "attachments"
 
 # directories to ignore
-ignored_directories: []
+ignored_directories: ["dailies", "jots", "work", "movies", "templates"]
 "#;
 
 const PARTIAL_HEAD: &str = r#"<html>
@@ -280,14 +305,14 @@ const DEFAULT_HTML: &str = r#"
   {% include "partials/head.html" %}
   <body style="display: flex;">
     <main>
-      <h1> {{title}}</h1>
+      <h1> {{page.title}}</h1>
 
-      {{content}}
+      {{page.content}}
 
-      {% if backlinks | length > 0 %}
+      {% if page.backlinks | length > 0 %}
       <h2> Backlinks </h2>
       <ul>
-      {% for bl in backlinks %}
+      {% for bl in page.backlinks %}
         <li><a href="{{bl.originating_file_url}}">{{bl.originating_file_title}}</a></li>
       {% endfor %}
       </ul>

@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::{fs, path::PathBuf};
 
 use crate::frontmatter::Frontmatter;
@@ -10,15 +11,20 @@ use std::io;
 use std::io::{BufRead, BufReader};
 use tera::Context;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MdFile {
     raw: String,
-    html: String,
+    pub html: String,
     path: PathBuf,
-    web_path: PathBuf,
+    pub web_path_parents: PathBuf,
+    pub web_path: PathBuf,
     out_path: PathBuf,
     pub frontmatter: Frontmatter,
-    full_url: String,
+    pub full_url: String,
+    /// if file is a _index.md, we say it's a section, which
+    /// is given a different tera context to render.
+    pub is_section: bool,
+    pub backlinks: Vec<Link>,
 }
 
 impl MdFile {
@@ -29,23 +35,28 @@ impl MdFile {
         // AS WELL as the "web_path" which is the part that follow your domain name: <mydomain.com>/this-is-the-web-path.
 
         // turns; /Users/tees/development/tees/esker/test-site/foo/bar.md" -> test-site/foo/
-        let web_parent_paths = path
+        let web_path_parents = path
             .strip_prefix(site.dir.clone())
             .unwrap()
             .parent()
-            .unwrap();
+            .unwrap()
+            .to_path_buf();
 
         let filename = path.file_stem().unwrap().to_str().unwrap().to_string();
         let mut out_file_path_slugified = slugify!(&filename);
         // takes slugified file name and adds html extension
-        let web_path = PathBuf::from(out_file_path_slugified.clone()).with_extension("html");
-        let web_path_str = web_path.clone().into_os_string().into_string().unwrap();
+        let web_path_stem = PathBuf::from(out_file_path_slugified.clone()).with_extension("html");
+        let web_path_str = web_path_stem
+            .clone()
+            .into_os_string()
+            .into_string()
+            .unwrap();
         let out_path = PathBuf::from(&site.dir_esker_build)
-            .join(web_parent_paths.join(PathBuf::from(&web_path)));
+            .join(web_path_parents.join(PathBuf::from(&web_path_stem)));
 
         // now let's make the full url.
-        let url_path = PathBuf::from(web_parent_paths)
-            .join(web_path)
+        let url_path = PathBuf::from(web_path_parents.clone())
+            .join(web_path_stem.clone())
             .into_os_string()
             .into_string()
             .unwrap();
@@ -56,10 +67,13 @@ impl MdFile {
             raw: raw_str,
             html: String::from(""),
             path,
+            web_path_parents,
+            web_path: web_path_stem,
             out_path,
-            web_path: PathBuf::new(),
-            full_url,
             frontmatter: fm,
+            full_url,
+            is_section: if filename == "_index" { true } else { false },
+            backlinks: Vec::new(),
         };
 
         md_file
@@ -124,11 +138,37 @@ impl MdFile {
         });
         html::push_html(&mut html_output, parser);
         self.html = html_output;
+        self.get_backlinks_for_file(site);
+    }
+
+    /// enables creating "post list" type pages where the "section" context
+    /// corresponds to every file in the dir
+    pub fn write_section_html(&self, site: &Site, markdown_files: &HashMap<PathBuf, Vec<MdFile>>) {
+        if let Some(section_content) = markdown_files.get(&self.web_path_parents) {
+            let serialized_pages: Vec<_> = section_content
+                .iter()
+                .filter(|md_file| !md_file.is_section)
+                .map(|md_file| templates::Page::new(md_file))
+                .collect();
+
+            let mut ctx = Context::new();
+            ctx.insert("page", &templates::Page::new(self));
+            ctx.insert("pages", &serialized_pages);
+            ctx.insert("baseurl", &site.config.url.clone());
+            ctx.insert("section", &templates::SectionPage::new(serialized_pages));
+
+            let template_name = templates::get_name(&site.tera, &self.frontmatter.template);
+            let rendered_template = site.tera.render(&template_name, &ctx).unwrap();
+            let prefix = &self.out_path.parent().unwrap();
+            fs::create_dir_all(prefix).unwrap();
+            let mut file = fs::File::create(&self.out_path).expect("couldn't create file");
+            fs::write(&self.out_path, rendered_template).expect("Unable to write file");
+        }
     }
 
     /// writes a file to it's specified output path.
-    pub fn write_html(&mut self, site: &mut Site) {
-        let rendered_template = self.render_with_tera(site, &self.html);
+    pub fn write_html(&self, site: &mut Site) {
+        let rendered_template = self.render_with_tera(site);
         let prefix = &self.out_path.parent().unwrap();
         fs::create_dir_all(prefix).unwrap();
         let mut file = fs::File::create(&self.out_path).expect("couldn't create file");
@@ -136,18 +176,18 @@ impl MdFile {
     }
 
     /// sets up the tera context, and renders the file with
-    fn render_with_tera(&self, site: &mut Site, html_output: &String) -> String {
+    /// TODO: move this into write_html.
+    fn render_with_tera(&self, site: &mut Site) -> String {
+        // self.get_backlinks_for_file(site);
         let mut ctx = Context::new();
-        ctx.insert("title", &self.frontmatter.title);
+        ctx.insert("page", &templates::Page::new(self));
         ctx.insert("baseurl", &site.config.url.clone());
-        ctx.insert("content", &html_output);
-        ctx.insert("backlinks", &self.get_backlinks_for_file(site));
         let template_name = templates::get_name(&site.tera, &self.frontmatter.template);
         let rendered_template = site.tera.render(&template_name, &ctx).unwrap();
         return rendered_template;
     }
 
-    fn get_backlinks_for_file(&self, site: &mut Site) -> Vec<Link> {
+    fn get_backlinks_for_file(&mut self, site: &Site) {
         let mut out: Vec<Link> = Vec::new();
         for g_link in &site.links.internal {
             if g_link.url == self.full_url && self.full_url != g_link.originating_file_url {
@@ -156,7 +196,7 @@ impl MdFile {
                 }
             }
         }
-        out
+        self.backlinks = out
     }
 
     /// sets the "raw" contents field for the md_file to be the file without the frontmatter.

@@ -1,10 +1,11 @@
 // use crate::util;
 use crate::{site::Site, util};
 use chrono::prelude::{DateTime, Local, NaiveDateTime};
+use chrono::ParseError;
 use std::fs;
 use std::path::PathBuf;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Frontmatter {
     pub title: String,
     filepath: PathBuf,
@@ -73,6 +74,30 @@ impl Frontmatter {
         }
     }
 
+    fn match_possible_dates(date_str: &str) -> Result<NaiveDateTime, ParseError> {
+        if let Ok(dc) = NaiveDateTime::parse_from_str(date_str, "%Y-%m-%d %H:%M:%S") {
+            return Ok(dc);
+        }
+
+        if let Ok(dc) = NaiveDateTime::parse_from_str(date_str, "%Y-%m-%d %H:%M") {
+            return Ok(dc);
+        }
+
+        return match NaiveDateTime::parse_from_str(date_str, "%Y-%m-%d") {
+            Ok(dc) => Ok(dc),
+            Err(e) => {
+                // try adding extra HH/MM to datestring to see if that works, otherwise giveup.
+                let mut new_date_str_attempt = String::from(date_str);
+                new_date_str_attempt.push_str(" 17:00");
+                match NaiveDateTime::parse_from_str(&new_date_str_attempt, "%Y-%m-%d %H:%M")
+                {
+                    Ok(res) => return Ok(res),
+                    Err(err) => return Err(err),
+                }
+            }
+        };
+    }
+
     pub fn get_key_value_from_line(&mut self, line: &str, site: &mut Site) {
         match line.split_once(":") {
             Some((key, val)) => {
@@ -81,22 +106,21 @@ impl Frontmatter {
 
                 match lhs {
                     "title" => self.title = rhs.trim().to_string(),
-                    "date_created" => match NaiveDateTime::parse_from_str(rhs, "%Y-%m-%d %H:%M") {
-                        Ok(date_created) => self.date_created = date_created,
+                    "date_created" => match Self::match_possible_dates(rhs) {
+                        Ok(res) => self.date_created = res,
                         Err(_) => {
                             site.errors
                                 .add_invalid_date_created(self.get_filepath_as_str());
                         }
                     },
 
-                    "date_updated" => match NaiveDateTime::parse_from_str(rhs, "%Y-%m-%d %H:%M") {
-                        Ok(date_updated) => self.date_updated = date_updated,
+                    "date_updated" => match Self::match_possible_dates(rhs) {
+                        Ok(res) => self.date_updated = res,
                         Err(_) => {
                             site.errors
                                 .add_invalid_date_updated(self.get_filepath_as_str());
                         }
                     },
-
                     "summary" => {
                         self.summary = Some(rhs.to_string());
                     }
