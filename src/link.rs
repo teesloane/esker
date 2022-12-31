@@ -26,7 +26,7 @@ pub struct Link {
     pub is_internal: bool,
     pub title: String,
     pub originating_file_title: String,
-    pub originating_file_url: String
+    pub originating_file_url: String,
 }
 
 // TODO: this could probably be grouped in a file with the parser for better organizations.
@@ -42,32 +42,35 @@ impl Link {
         tag: Tag,
         site: &mut Site,
         originating_url: String,
-        originating_title: String
+        originating_title: String,
     ) {
         match tag {
             Tag::Link(link_type, url, title) => {
+                let mut url_str = Self::slugify_internal_url(url.to_string().clone());
+                if Self::is_internal(&url) {
+                    let url_as_path = PathBuf::from(&url_str).with_extension("html");
+                    url_str = format!("{}", url_as_path.display());
 
-        let mut url_str = Self::slugify_internal_url(url.to_string().clone());
-        if Self::is_internal(&url) {
-            let url_as_path = PathBuf::from(&url_str).with_extension("html");
-            url_str = format!("{}", url_as_path.display());
-            let new_link_url = site.build_with_baseurl(url_str);
+                    let mut new_link_url: CowStr;
+                    if Self::is_mailto(&url.to_string().clone()) {
+                        new_link_url = url
+                    } else {
+                        new_link_url = site.build_with_baseurl(url_str).into();
+                    }
 
-            self.url = new_link_url;
-            self.is_internal = true;
-        } else {
-            self.url = url.to_string();
-            self.is_internal = false;
-        }
+                    self.url = new_link_url.to_string();
+                    self.is_internal = true;
+                } else {
+                    self.url = url.to_string();
+                    self.is_internal = false;
+                }
 
-        self.title = title.to_string();
-        self.originating_file_title = originating_title;
-        self.originating_file_url = originating_url
-
+                self.title = title.to_string();
+                self.originating_file_title = originating_title;
+                self.originating_file_url = originating_url
             }
-            _ => panic!()
+            _ => panic!(),
         }
-
     }
 
     pub fn empty() -> Link {
@@ -125,6 +128,10 @@ impl Link {
 
     pub fn is_internal(url: &str) -> bool {
         return !(Self::is_external(url));
+    }
+
+    pub fn is_mailto(url: &str) -> bool {
+        return url.starts_with("mailto:");
     }
 
     pub fn is_external(url: &str) -> bool {
