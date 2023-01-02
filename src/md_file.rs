@@ -5,6 +5,7 @@ use crate::frontmatter::Frontmatter;
 use crate::link::Link;
 use crate::site::Site;
 use crate::templates;
+use crate::parser::CodeBlockSyntaxHighlight;
 use pulldown_cmark::{html, Event, Options, Parser, Tag};
 use slugify::slugify;
 use std::io;
@@ -136,10 +137,13 @@ impl MdFile {
                 _ => event,
             }
         });
+        let parser = CodeBlockSyntaxHighlight::new(parser);
+
         html::push_html(&mut html_output, parser);
         self.html = html_output;
         self.get_backlinks_for_file(site);
     }
+
 
     /// enables creating "post list" type pages where the "section" context
     /// corresponds to every file in the dir

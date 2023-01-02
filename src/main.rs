@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 #![allow(unused_mut)]
 #![allow(unused_variables)]
+#![allow(unused_imports)]
 
 pub mod errors;
 pub mod frontmatter;
@@ -10,6 +11,7 @@ pub mod site;
 pub mod util;
 pub mod templates;
 pub mod config;
+pub mod parser;
 
 use clap::{Parser, Subcommand};
 use site::Site;
@@ -30,6 +32,7 @@ struct Cli {
 enum Commands {
     /// Build your site
     Build,
+    DumpSyntax,
     New
 }
 
@@ -42,6 +45,11 @@ fn main() {
         }
         Some(Commands::Build) => {
             let s = Site::build(cli.dir);
+        }
+
+        Some(Commands::DumpSyntax) => {
+            parser::dump_syntax_binary();
+
         }
         None => {}
     }

@@ -1,6 +1,8 @@
 use colored::*;
+use syntect::html;
 use std::collections::HashMap;
 use std::fs;
+use std::path::Path;
 use std::process::Command;
 use std::{env, fs::create_dir_all, path::PathBuf};
 
@@ -12,6 +14,8 @@ use crate::{
     link::{Link, SiteLinks},
     md_file::MdFile,
 };
+
+use syntect::highlighting::ThemeSet;
 
 #[derive(Debug)]
 pub struct Site {
@@ -76,6 +80,7 @@ impl Site {
         site.load_files();
         site.cp_data();
         site.cp_public();
+        site.create_theme_css();
 
         return site;
     }
@@ -215,6 +220,15 @@ impl Site {
         }
     }
 
+    fn create_theme_css(&self) {
+        let theme_path = Path::new("../syntaxes/Material-Theme.tmTheme");
+        let theme = ThemeSet::get_theme(theme_path).expect("failed to get theme");
+        let css = html::css_for_theme_with_class_style(&theme, html::ClassStyle::Spaced).expect("failed to load css from theme");
+
+        let css_output_path = Path::join(&self.dir_esker_build_public, Path::new("css/theme.css"));
+        fs::write(css_output_path, &css).expect("Unable to write css theme file");
+    }
+
     // -- New Site generation
 
     // creates an _esker site and template files
@@ -247,6 +261,7 @@ impl Site {
             files.insert(String::from("public/js/main.js"), DEFAULT_JS);
             files.insert(String::from("public/css/main.css"), DEFAULT_CSS);
             files.insert(String::from("templates/default.html"), DEFAULT_HTML);
+            files.insert(String::from("templates/list.html"), LIST_HTML);
             files.insert(String::from("config.yaml"), CONFIG_YAML);
 
             // Map over the above strings, turn them into paths, and create them.
@@ -295,6 +310,7 @@ const PARTIAL_HEAD: &str = r#"<html>
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     <script src="{{baseurl}}/public/js/main.js"></script>
     <link rel="stylesheet" href="{{baseurl}}/public/css/main.css" type="text/css" media="screen" />
+    <link rel="stylesheet" href="{{baseurl}}/public/css/theme.css" type="text/css" media="screen" />
     <style>
     </style>
   </head>
@@ -324,6 +340,41 @@ const DEFAULT_HTML: &str = r#"
     window.x = {{__tera_context}};
   </script>
 </html>
+"#;
+
+const LIST_HTML: &str = r#"
+<html>
+  {% include "partials/head.html" %}
+  <body style="display: flex;">
+    <main>
+      <h1> {{page.title}}</h1>
+
+      {{page.content}}
+
+      {% for page in section.pages | reverse %}
+        <li style="list-style-type: none" class="flex flex-col">
+          <a href="{{page.url}}"> <h3>{{page.title}}</h3> </a>
+          <div>{{page.summary}}</div>
+          <div>{{page.date_created}}</div>
+        </li>
+      {% endfor %}
+
+      {% if page.backlinks | length > 0 %}
+      <h2> Backlinks </h2>
+      <ul>
+      {% for bl in page.backlinks %}
+        <li><a href="{{bl.originating_file_url}}">{{bl.originating_file_title}}</a></li>
+      {% endfor %}
+      </ul>
+      {% endif %}
+    </main>
+  </body>
+
+  <script>
+    window.x = {{__tera_context}};
+  </script>
+</html>
+
 "#;
 
 const DEFAULT_JS: &str = r#"
@@ -356,7 +407,14 @@ pre {
   border: 1px solid #dfdfdf;
   padding: 16px;
   margin: 24px 0;
+  background-color: #263238;
 }
+
+.highlight {
+  background-color: #263238;
+  color: #eeffff;
+}
+
 
 section {
   padding-bottom: 32px;
