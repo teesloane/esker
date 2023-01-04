@@ -1,0 +1,55 @@
+
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>My Site - {% block title %} {% endblock title %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <script src="{{baseurl}}/public/js/main.js"></script>
+    <link rel="stylesheet" href="{{baseurl}}/public/css/syntax-theme-dark.css" type="text/css" media="screen" />
+    <link rel="stylesheet" href="{{baseurl}}/public/css/syntax-theme-light.css" type="text/css" media="screen" />
+    <link rel="stylesheet" href="{{baseurl}}/public/css/main.css" type="text/css" media="screen" />
+    <style>
+    </style>
+  </head>
+
+  <body style="display: flex;">
+    <main style="display: flex;">
+      <div style="display: flex; flex-direction: column; flex: 1;">
+        <article>
+          {% if page.title %}
+          <h1> {{page.title}}</h1>
+          {% endif %}
+          {% block content %} {{page.content}} {% endblock content %}
+        </article>
+
+        {% if page.backlinks  %}
+        {% if page.backlinks | length > 0 %}
+        <h2> Backlinks </h2>
+        <ul>
+          {% for bl in page.backlinks %}
+          <li><a href="{{bl.originating_file_url}}">{{bl.originating_file_title}}</a></li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+        {% endif %}
+      </div>
+
+      <aside class="flex: 1; background-color: #333">
+        <h3> Tags </h3>
+        <ul>
+          {% for tag, tagged_items in tags %}
+          <li><a href="{{baseurl}}/tags/{{tag}}">{{tag}} ({{tagged_items | length }})</a></li>
+          {% endfor %}
+        </ul>
+      </aside>
+
+    </main>
+  </body>
+  <script>
+    window.x = {{__tera_context}};
+  </script>
+
+</html>
+
+

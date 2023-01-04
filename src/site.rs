@@ -6,6 +6,9 @@ use std::path::Path;
 use std::process::Command;
 use std::{env, fs::create_dir_all, path::PathBuf};
 
+
+
+use crate::parser::THEMES;
 // use crate::link::SiteLinks;
 use crate::{config::Config, util};
 use crate::{
@@ -13,6 +16,8 @@ use crate::{
     frontmatter::Frontmatter,
     link::{Link, SiteLinks},
     md_file::MdFile,
+    new_site,
+    parser
 };
 
 use syntect::highlighting::ThemeSet;
@@ -37,6 +42,8 @@ pub struct Site {
     dir_esker_public: PathBuf,
     /// where public will go in _site.
     dir_esker_build_public: PathBuf,
+    /// _esker/_site/<tag_url>/*tag_files.html
+    pub dir_esker_build_tags: Option<PathBuf>,
     ///errorz
     pub errors: Errors,
     /// templating enginge
@@ -45,6 +52,8 @@ pub struct Site {
     pub links: SiteLinks,
     /// user config stuff
     pub config: Config,
+    /// All tags, as collected from frontmatter (TODO: not from content yet!)
+    pub tags: HashMap<String, Vec<Link>>,
 }
 
 impl Site {
@@ -57,8 +66,18 @@ impl Site {
         }
 
         let esker_dir = cwd.clone().join("_esker");
+        let dir_esker_build =  esker_dir.join("_site");
         let esker_dir_templates = esker_dir.join("templates");
         let user_config = Config::new(&cwd);
+
+        let mut dir_esker_tags: Option<PathBuf>;
+        if let Some(tags_dir) = &user_config.tags_url {
+            let path_from_config = Path::new(&tags_dir).to_path_buf();
+            let res = dir_esker_build.join(path_from_config);
+            dir_esker_tags = Some(res);
+        } else {
+            dir_esker_tags = None;
+        }
 
         let mut site = Site {
             dir: cwd.clone(),
@@ -66,21 +85,25 @@ impl Site {
             markdown_files: HashMap::new(),
             invalid_files: Vec::new(),
             dir_esker_templates: esker_dir_templates.clone(),
-            dir_esker_build: esker_dir.join("_site"),
+            dir_esker_build,
             dir_esker_public: esker_dir.join("public"),
             dir_esker_build_public: esker_dir.join("_site/public"),
             dir_esker: esker_dir,
+            dir_esker_build_tags: dir_esker_tags,
             errors: Errors::new(),
             tera: crate::templates::load_templates(&esker_dir_templates),
             config: user_config,
             links: SiteLinks::new(),
+            tags: HashMap::new(),
+
         };
 
         site.create_required_directories_for_build();
         site.load_files();
+        site.build_tag_pages();
+        site.create_theme_css();
         site.cp_data();
         site.cp_public();
-        site.create_theme_css();
 
         return site;
     }
@@ -96,8 +119,7 @@ impl Site {
         }
     }
 
-    /// For now we shell out to cp on unix because I don't want to figure this out in rust
-    /// and windows support for Firn doesn't exist in the clojure version anyway.
+    /// For now we shell out to cp on unix because I don't want to figure this out in rust.
     /// copies data and public folder to their respective destinations
     pub fn cp_data(&mut self) {
         if let Some(attachment_dir) = &self.config.attachment_directory {
@@ -109,6 +131,28 @@ impl Site {
                 .arg(self.dir_esker_build.display().to_string())
                 .output()
                 .expect("Internal error: failed to copy data directory to _site.");
+        }
+    }
+
+    /// build_tag_pages will render html pages for each tag,
+    /// and is given a tera context with access to tagged_items;
+    /// this allows users to generates html page per tag, that can
+    /// link to each page that is thusly tagged.
+    fn build_tag_pages(&self) {
+        if let Some(dir_tags) = &self.dir_esker_build_tags {
+            fs::create_dir_all(dir_tags).expect("failed to create tags directory");
+
+            for (tag_name, vec_of_tagged_items) in &self.tags {
+                let mut ctx = tera::Context::new();
+                ctx.insert("baseurl", &self.config.url.clone());
+                ctx.insert("tags", &self.tags);
+                ctx.insert("tag", &tag_name);
+
+                let tag_file_name = Path::new(tag_name).with_extension("html");
+                let out_path = dir_tags.join(tag_file_name);
+                let rendered_template = self.tera.render("tags.html", &ctx).unwrap();
+                fs::write(out_path, rendered_template).unwrap();
+            }
         }
     }
 
@@ -144,8 +188,10 @@ impl Site {
 
                 if md_file.frontmatter.publish {
                     if let Some(vec_of_files) = markdown_files.get_mut(&md_file.web_path_parents) {
+                        self.collect_tags_from_frontmatter(&md_file);
                         vec_of_files.push(md_file);
                     } else {
+                        self.collect_tags_from_frontmatter(&md_file);
                         markdown_files.insert(md_file.web_path_parents.clone(), vec![md_file]);
                     }
                 }
@@ -168,12 +214,14 @@ impl Site {
         let markdown_files_clone = markdown_files.clone();
 
         // Loop #2 - Let's render it!
-        for (path, vec_md_files) in &markdown_files {
+        for (path, vec_md_files) in &mut markdown_files {
             for f in vec_md_files {
                 if f.frontmatter.publish {
                     if f.is_section {
+                    f.get_backlinks_for_file(self);
                         f.write_section_html(self, &markdown_files_clone);
                     } else {
+                    f.get_backlinks_for_file(self);
                         f.write_html(self);
                     }
                 }
@@ -187,6 +235,20 @@ impl Site {
 
         if self.errors.has_errors() {
             self.errors.report_errors();
+        }
+    }
+
+    fn collect_tags_from_frontmatter(&mut self, md_file: &MdFile) {
+        for tag in &md_file.frontmatter.tags {
+            let new_tag_link = Link::new_tag_link_from_md_file(&md_file);
+
+            if let Some(list_of_links_for_tag) = self.tags.get_mut(tag) {
+                list_of_links_for_tag.push(new_tag_link)
+
+            } else  {
+                self.tags.insert(tag.clone(), vec![new_tag_link]);
+
+            }
         }
     }
 
@@ -206,27 +268,32 @@ impl Site {
     /// filter out files that are in the private folder.
     pub fn is_in_private_folder(&self, file_source: &PathBuf) -> bool {
         if let Some(ignored_dirs) = &self.config.ignored_directories {
-            let dir_source = util::path_to_string(&self.dir);
             // add the full path to all ignored _dirs
-            let ignored_dirs: Vec<String> = ignored_dirs
+            let ignored_dirs: Vec<PathBuf> = ignored_dirs
                 .iter()
-                .map(|d| format!("{}/{}", dir_source, d))
+                .map(|d| self.dir.join(Path::new(d)))
                 .collect();
+
             let current_file_path = PathBuf::from(file_source);
             let mut ancestors = current_file_path.ancestors();
-            !ancestors.any(|f| ignored_dirs.contains(&f.display().to_string()))
+            !ancestors.any(|f| ignored_dirs.contains(&PathBuf::from(f)))
         } else {
             false
         }
     }
 
     fn create_theme_css(&self) {
-        let theme_path = Path::new("../syntaxes/Material-Theme.tmTheme");
-        let theme = ThemeSet::get_theme(theme_path).expect("failed to get theme");
-        let css = html::css_for_theme_with_class_style(&theme, html::ClassStyle::Spaced).expect("failed to load css from theme");
+        if let Some(theme) = THEMES.themes.get("zenburn") {
+            let css = html::css_for_theme_with_class_style(theme, html::ClassStyle::Spaced).unwrap();
+            let css_output_path = Path::join(&self.dir_esker_public, Path::new("css/syntax-theme-dark.css"));
+            fs::write(css_output_path, &css).expect("Unable to write css theme file");
+        }
 
-        let css_output_path = Path::join(&self.dir_esker_build_public, Path::new("css/theme.css"));
-        fs::write(css_output_path, &css).expect("Unable to write css theme file");
+        if let Some(theme) = THEMES.themes.get("solarized-light") {
+            let css = html::css_for_theme_with_class_style(theme, html::ClassStyle::Spaced).unwrap();
+            let css_output_path = Path::join(&self.dir_esker_public, Path::new("css/syntax-theme-light.css"));
+            fs::write(css_output_path, &css).expect("Unable to write css theme file");
+        }
     }
 
     // -- New Site generation
@@ -257,12 +324,13 @@ impl Site {
             ];
 
             let mut files = HashMap::new();
-            files.insert(String::from("templates/partials/head.html"), PARTIAL_HEAD);
-            files.insert(String::from("public/js/main.js"), DEFAULT_JS);
-            files.insert(String::from("public/css/main.css"), DEFAULT_CSS);
-            files.insert(String::from("templates/default.html"), DEFAULT_HTML);
-            files.insert(String::from("templates/list.html"), LIST_HTML);
-            files.insert(String::from("config.yaml"), CONFIG_YAML);
+            files.insert(String::from("public/js/main.js"), new_site::DEFAULT_JS);
+            files.insert(String::from("public/css/main.css"), new_site::DEFAULT_CSS);
+            files.insert(String::from("templates/base.html"), new_site::BASE_HTML);
+            files.insert(String::from("templates/default.html"), new_site::DEFAULT_HTML);
+            files.insert(String::from("templates/tags.html"), new_site::TAGS_HTML);
+            files.insert(String::from("templates/list.html"), new_site::LIST_HTML);
+            files.insert(String::from("config.yaml"), new_site::CONFIG_YAML);
 
             // Map over the above strings, turn them into paths, and create them.
             for &dir in &dirs {
@@ -284,145 +352,3 @@ impl Site {
         }
     }
 }
-
-const CONFIG_YAML: &str = r#"# site-wide configuration:
-# your sites url
-url: "http://localhost:8080"
-
-# site title
-title: "My Site"
-
-# your site description.
-description: "My Site Description"
-
-# name of the directory where you store attachments
-attachment_directory: "attachments"
-
-# directories to ignore
-ignored_directories: ["dailies", "jots", "work", "movies", "templates"]
-"#;
-
-const PARTIAL_HEAD: &str = r#"<html>
-  <head>
-    <meta charset="utf-8">
-    <title>My Site</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-    <script src="{{baseurl}}/public/js/main.js"></script>
-    <link rel="stylesheet" href="{{baseurl}}/public/css/main.css" type="text/css" media="screen" />
-    <link rel="stylesheet" href="{{baseurl}}/public/css/theme.css" type="text/css" media="screen" />
-    <style>
-    </style>
-  </head>
-"#;
-
-const DEFAULT_HTML: &str = r#"
-<html>
-  {% include "partials/head.html" %}
-  <body style="display: flex;">
-    <main>
-      <h1> {{page.title}}</h1>
-
-      {{page.content}}
-
-      {% if page.backlinks | length > 0 %}
-      <h2> Backlinks </h2>
-      <ul>
-      {% for bl in page.backlinks %}
-        <li><a href="{{bl.originating_file_url}}">{{bl.originating_file_title}}</a></li>
-      {% endfor %}
-      </ul>
-      {% endif %}
-    </main>
-  </body>
-
-  <script>
-    window.x = {{__tera_context}};
-  </script>
-</html>
-"#;
-
-const LIST_HTML: &str = r#"
-<html>
-  {% include "partials/head.html" %}
-  <body style="display: flex;">
-    <main>
-      <h1> {{page.title}}</h1>
-
-      {{page.content}}
-
-      {% for page in section.pages | reverse %}
-        <li style="list-style-type: none" class="flex flex-col">
-          <a href="{{page.url}}"> <h3>{{page.title}}</h3> </a>
-          <div>{{page.summary}}</div>
-          <div>{{page.date_created}}</div>
-        </li>
-      {% endfor %}
-
-      {% if page.backlinks | length > 0 %}
-      <h2> Backlinks </h2>
-      <ul>
-      {% for bl in page.backlinks %}
-        <li><a href="{{bl.originating_file_url}}">{{bl.originating_file_title}}</a></li>
-      {% endfor %}
-      </ul>
-      {% endif %}
-    </main>
-  </body>
-
-  <script>
-    window.x = {{__tera_context}};
-  </script>
-</html>
-
-"#;
-
-const DEFAULT_JS: &str = r#"
-"#;
-
-const DEFAULT_CSS: &str = r#"body{
-  color: #333;
-  background: #fff;
-  max-width: 48em;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  font-family: "Charter", Arial;
-  padding: 64px 0;
-
-}
-
-.footnote-definition {
-  display: flex;
-  align-items: baseline;
-}
-
-.footnote-definition-label {
-  margin-right: 16px;
-}
-
-
-pre {
-  overflow: scroll;
-  border: 1px solid #dfdfdf;
-  padding: 16px;
-  margin: 24px 0;
-  background-color: #263238;
-}
-
-.highlight {
-  background-color: #263238;
-  color: #eeffff;
-}
-
-
-section {
-  padding-bottom: 32px;
-}
-
-ul, ol {
-  padding-left: 16px;
-}
-
-img { max-width: 100%; }
-"#;

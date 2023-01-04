@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %} Tags {% endblock title %}
+{% block content %}
+      <h3>{{tag}}</h3>
+      <ul>
+      {% for link_tag in tags[tag] %}
+        <li>
+          <a href={{link_tag.url}}>{{link_tag.title}} </a>
+        </li>
+      {% endfor %}
+      </ul>
+{% endblock content %}

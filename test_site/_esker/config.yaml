@@ -1,0 +1,18 @@
+# site-wide configuration:
+# your sites url
+url: "http://localhost:8080"
+
+# site title
+title: "My Site"
+
+# your site description.
+description: "My Site Description"
+
+# name of the directory where you store attachments
+attachment_directory: "attachments"
+
+# directories to ignore
+ignored_directories: ["dailies", "jots", "work", "media", "templates"]
+
+# the url you wish to use for grouping "tags" under
+tags_url: "tags"

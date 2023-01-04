@@ -12,6 +12,7 @@ pub mod util;
 pub mod templates;
 pub mod config;
 pub mod parser;
+pub mod new_site;
 
 use clap::{Parser, Subcommand};
 use site::Site;

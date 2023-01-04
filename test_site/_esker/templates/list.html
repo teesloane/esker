@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %} {{page.title}} {% endblock title %}
+
+{% block content %}
+  {{super()}}
+  <ol reversed>
+      {% for page in section.pages | reverse %}
+        <li style="list-style-type: none; margin-bottom: 32px">
+          <a href="{{page.url}}"> <h3>{{page.title}}</h3> </a>
+          <i>{{page.summary}}</i>
+          <div class="text-sm text-alt">{{page.date_created}}</div>
+        </li>
+      {% endfor %}
+  </ol>
+
+{% endblock content %}

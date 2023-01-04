@@ -1,0 +1,78 @@
+
+
+@import url("syntax-theme-dark.css") (prefers-color-scheme: dark);
+@import url("syntax-theme-light.css") (prefers-color-scheme: light);
+
+
+:root {
+  --bg: #efefef;
+  --color: #333;
+  --color-alt: #666;
+  --link-color: #2980b9;
+}
+
+/* CSS Variables (dark mode) */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111;
+    --color: #dfdfdf;
+    --color-alt: #666;
+    --link-color: #fdcb6e;
+  }
+}
+
+
+body {
+  color: var(--color);
+  background-color: var(--bg);
+  max-width: 48em;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  font-family: "Charter", Arial;
+  padding: 64px 0;
+}
+
+.footnote-definition {
+  display: flex;
+  align-items: baseline;
+}
+
+.footnote-definition-label {
+  margin-right: 16px;
+}
+
+
+pre {
+  overflow: scroll;
+  border: 1px solid #dfdfdf;
+  padding: 16px;
+  margin: 24px 0;
+}
+
+a {
+  color: var(--link-color);
+text-decoration: none;
+}
+
+a:visited {
+  color: var(--color);
+}
+
+
+section {
+  padding-bottom: 32px;
+}
+
+ul, ol {
+  padding-left: 16px;
+}
+
+img { max-width: 100%; }
+
+.text-sm {font-size: 12px;}
+.text-md {font-size: 16px;}
+
+.text-alt {
+  color: var(--color-alt);
+}

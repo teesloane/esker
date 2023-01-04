@@ -10,6 +10,7 @@ pub struct Config {
     pub attachment_directory: Option<String>,
     pub description: Option<String>,
     pub ignored_directories: Option<Vec<String>>,
+    pub tags_url: Option<String>
 }
 
 impl Config {

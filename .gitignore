@@ -2,4 +2,6 @@
 
 _site/
 
+.DS_Store
+
 stream.org

@@ -4,6 +4,7 @@ use lazy_static::lazy_static;
 use pulldown_cmark::{CodeBlockKind, Event};
 use regex::Regex;
 use slugify::slugify;
+use syntect::dumps::from_binary;
 use syntect::parsing::SyntaxReference;
 use syntect::{
     dumps, highlighting::ThemeSet, html, html::ClassStyle, html::ClassedHTMLGenerator,
@@ -18,6 +19,11 @@ lazy_static! {
     static ref BLOCK_CODE_SPEC: Regex = Regex::new(r"^\w+$").unwrap();
 }
 
+lazy_static! {
+    pub static ref THEMES: ThemeSet = from_binary(include_bytes!("../syntaxes/all.themedump"));
+}
+
+
 // -- highlighting setup --
 
 fn syntax_set() -> SyntaxSet {
@@ -27,9 +33,18 @@ fn syntax_set() -> SyntaxSet {
 // map language name from code block to what syntect wants.
 fn syntect_lang_name(lang: &str) -> &str {
     match lang {
-        "rust" => "Rust",
-        "racket" => "Racket",
+        "elixir" => "Elixir",
         "clojure" => "Clojure",
+        "haskell" => "Haskell",
+        "perl" => "Perl",
+        "python" => "Python",
+        "python3" => "Python",
+        "racket" => "Racket",
+        "ruby" => "Ruby",
+        "rust" => "Rust",
+        "shell" => "Shell-Unix-Generic",
+        "elm" => "Elm",
+
         x => x,
     }
 }
@@ -67,7 +82,6 @@ impl<'a, I: Iterator<Item = Event<'a>>> Iterator for CodeBlockSyntaxHighlight<'a
             Event::Start(pulldown_cmark::Tag::CodeBlock(CodeBlockKind::Fenced(lang))) => lang,
             other => return Some(other),
         };
-
         let lang = parse_code_spec(&lang);
 
         let mut code = String::new();
@@ -76,7 +90,7 @@ impl<'a, I: Iterator<Item = Event<'a>>> Iterator for CodeBlockSyntaxHighlight<'a
         }
 
         let mut res = String::new();
-        res.push_str("<pre>");
+        res.push_str(r#"<pre class="code">"#);
         push_code_highlight(&mut res, lang, &code);
         res.push_str("</pre>");
 
@@ -84,15 +98,11 @@ impl<'a, I: Iterator<Item = Event<'a>>> Iterator for CodeBlockSyntaxHighlight<'a
     }
 }
 
-// TODO:
-// - highlightspec
-// - html_escape
-
 fn push_code_highlight<S: AsRef<str>>(s: &mut String, lang: Option<S>, code: &str) {
     if let Some(spec) = lang.and_then(|x| HighlightSpec::find(x.as_ref())) {
         match highlight(&spec, code) {
             Ok(highlight) => {
-                s.push_str(r#"<code class="highlight "#);
+                s.push_str(r#"<code class="highlight code "#);
                 s.push_str(&spec.html_id);
                 s.push_str(r#"">"#);
                 s.push_str(&highlight);

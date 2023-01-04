@@ -45,7 +45,8 @@ pub struct Page<'a> {
     backlinks: &'a Vec<Link>,
     url: &'a String,
     summary: &'a Option<String>,
-    date_created: String
+    date_created: String,
+    tags: &'a Vec<String>
 }
 
 impl Page<'_> {
@@ -57,6 +58,7 @@ impl Page<'_> {
             url: &md_file.full_url,
             summary: &md_file.frontmatter.summary,
             date_created: md_file.frontmatter.date_created_str(),
+            tags: &md_file.frontmatter.tags
         }
     }
 }

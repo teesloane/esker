@@ -1,4 +1,4 @@
-use crate::site::Site;
+use crate::{site::Site, md_file::MdFile};
 use pulldown_cmark::{CowStr, LinkType, Tag};
 use slugify::slugify;
 use std::path::PathBuf;
@@ -37,6 +37,18 @@ pub struct Link {
 // then matching on that. It worked almost perfectly except that I ran into
 // borrow issues because of "partial borrows" ....
 impl Link {
+    pub fn new_tag_link_from_md_file(
+        md_file: &MdFile,
+    ) -> Self {
+        Self {
+            url: md_file.full_url.clone(),
+            is_internal: true,
+            title: md_file.frontmatter.title.clone(),
+            originating_file_title: md_file.frontmatter.title.clone(),
+            originating_file_url: md_file.full_url.clone(),
+        }
+    }
+
     pub fn update_vals(
         &mut self,
         tag: Tag,

@@ -1,0 +1,97 @@
+%YAML 1.2
+---
+name: SQL (Elixir)
+scope: source.ex.sql
+
+file_extensions: [ex.sql]
+authors: [Aziz Köksal <aziz.koeksal@gmail.com>]
+
+contexts:
+  main:
+    - match: |
+        (?xi)
+        (?>
+          (
+          # Scalar values.
+            current_(?>catalog|role|schema) | localtime(?:stamp)?
+          )
+        | (
+          # Should always be keywords, but SQL.sublime-syntax doesn't think so yet.
+          # Taken from https://www.postgresql.org/docs/current/sql-keywords-appendix.html
+            all|any|array|analy[sz]e|a?symmetric|authorization|at(?=\s+time\s+zone\b)|binary|both|by
+          | (?<=\bat\s)time(?=\s+zone\b) | (?<=\btime\s)zone | (?<=\bdo\s)nothing | (?<=\bon\s)conflict | (?<=\bwith\s)ordinality
+          | cast|cross|column|concurrently|collat(?:e|ion)|create|distinct|(?<!\bas\s)do
+          | except|excluded(?=\s*\.)|fetch|for(?:eign)?|freeze|full|group|intersect|into|inner|isnull
+          | i[sn]|ilike|lateral|leading|left|natural|not(?:null)?|nullif|on(?:ly)?|offset|order|outer
+          | over(?:laps)?|primary|recursive|returning|right|similar|some|table(?:sample)?|to|trailing
+          | unnest|unique|user|variadic|verbose|window
+          )
+        | (nulls | (?<=\bnulls\s)last)
+        )\b
+        # Various Postgres operators.
+        | (::|\|?\|/|!!?|<<|>>|[%^@|&#~])
+        # Postgres type cast identifier.
+        | (?<=::)\s*((?!\d)\w+(?:\[\])*)
+        # Postgres jsonb operators.
+        | (\\\\)(\?[|&]?)? | (->>?|\#>>?|@[@>?]|<@|\#-)
+        # Ecto argument placeholder.
+        | ((?<!\w)\\?\?(?!\w))
+        # Prepared statement parameter.
+        | (\$\d+)
+        # Database identifier.
+        | ((?!\d)\w+) (?=(?:\s*\.\s*(?!\d)\w+){2})
+        # Table and member identifier.
+        | ((?!\d)\w+) \s*(\.)\s* ((?!\d)\w+ | (?=["*]))
+        # Accessor punctuation.
+        | (\.(?!\d))
+        | (,)
+      captures:
+        1: support.function.scalar.sql
+        2: keyword.other.sql
+        3: constant.language.sql
+        4: keyword.operator.psql
+        5: storage.type.psql
+        6: constant.character.escape.char.elixir
+        7: keyword.operator.jsonb.psql
+        8: keyword.operator.jsonb.psql
+        9: constant.other.placeholder.elixir
+        10: constant.other.parameter.sql
+        11: constant.other.database-name.sql
+        12: constant.other.table-name.sql
+        13: punctuation.accessor.dot.sql
+        14: variable.other.member.sql
+        15: punctuation.accessor.dot.sql
+        16: punctuation.separator.comma.sql
+
+    - include: nested-comment
+    - include: scope:source.sql#comments
+
+    - match: |
+        (?x)(?:
+          \d+ (\.)? \d* (?: [eE] [-+]? \d+ )?
+        | (\.) \d+ (?: [eE] [-+]? \d+ )?
+        )
+      captures:
+        0: constant.numeric.sql
+        1: punctuation.separator.decimal.sql
+        2: punctuation.separator.decimal.sql
+
+    - include: scope:source.sql
+
+    - match: |
+        (?x)
+          ((?!\d)\w+)(?=\()
+        | ((?!\d)\w+)
+      captures:
+        1: variable.function.sql
+        2: variable.other.sql
+
+  nested-comment:
+    - match: /\*
+      scope: punctuation.definition.comment.sql
+      push:
+        - meta_scope: comment.block.sql
+        # Comments can be nested.
+        - include: nested-comment
+        - match: \*/
+          pop: 1

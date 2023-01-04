@@ -141,7 +141,6 @@ impl MdFile {
 
         html::push_html(&mut html_output, parser);
         self.html = html_output;
-        self.get_backlinks_for_file(site);
     }
 
 
@@ -160,6 +159,7 @@ impl MdFile {
             ctx.insert("pages", &serialized_pages);
             ctx.insert("baseurl", &site.config.url.clone());
             ctx.insert("section", &templates::SectionPage::new(serialized_pages));
+            ctx.insert("tags", &site.tags);
 
             let template_name = templates::get_name(&site.tera, &self.frontmatter.template);
             let rendered_template = site.tera.render(&template_name, &ctx).unwrap();
@@ -181,17 +181,19 @@ impl MdFile {
 
     /// sets up the tera context, and renders the file with
     /// TODO: move this into write_html.
+    /// TODO: rename this.
     fn render_with_tera(&self, site: &mut Site) -> String {
         // self.get_backlinks_for_file(site);
         let mut ctx = Context::new();
         ctx.insert("page", &templates::Page::new(self));
         ctx.insert("baseurl", &site.config.url.clone());
+        ctx.insert("tags", &site.tags);
         let template_name = templates::get_name(&site.tera, &self.frontmatter.template);
         let rendered_template = site.tera.render(&template_name, &ctx).unwrap();
         return rendered_template;
     }
 
-    fn get_backlinks_for_file(&mut self, site: &Site) {
+    pub fn get_backlinks_for_file(&mut self, site: &Site) {
         let mut out: Vec<Link> = Vec::new();
         for g_link in &site.links.internal {
             if g_link.url == self.full_url && self.full_url != g_link.originating_file_url {
