@@ -1,3 +1,7 @@
+/// Link represents any link found in markdown and converted for html.
+/// This module is a mix of a) handling functionality for mapping markdown parsed links -> html
+/// as well as b) functionality for creating links of a certain type, likely to be used in Tera. (sitemap, backlinks).
+
 use crate::{site::Site, md_file::MdFile};
 use pulldown_cmark::{CowStr, LinkType, Tag};
 use slugify::slugify;

@@ -160,6 +160,8 @@ impl MdFile {
             ctx.insert("baseurl", &site.config.url.clone());
             ctx.insert("section", &templates::SectionPage::new(serialized_pages));
             ctx.insert("tags", &site.tags);
+            ctx.insert("tags", &site.tags);
+            ctx.insert("sitemap", &site.template_sitemap);
 
             let template_name = templates::get_name(&site.tera, &self.frontmatter.template);
             let rendered_template = site.tera.render(&template_name, &ctx).unwrap();
@@ -183,11 +185,11 @@ impl MdFile {
     /// TODO: move this into write_html.
     /// TODO: rename this.
     fn render_with_tera(&self, site: &mut Site) -> String {
-        // self.get_backlinks_for_file(site);
         let mut ctx = Context::new();
         ctx.insert("page", &templates::Page::new(self));
         ctx.insert("baseurl", &site.config.url.clone());
         ctx.insert("tags", &site.tags);
+        ctx.insert("sitemap", &site.template_sitemap);
         let template_name = templates::get_name(&site.tera, &self.frontmatter.template);
         let rendered_template = site.tera.render(&template_name, &ctx).unwrap();
         return rendered_template;

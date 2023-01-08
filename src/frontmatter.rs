@@ -15,6 +15,7 @@ pub struct Frontmatter {
     pub date_created: NaiveDateTime,
     pub date_updated: NaiveDateTime,
     pub template: String,
+    pub in_sitemap: bool,
 }
 
 impl Frontmatter {
@@ -42,6 +43,8 @@ impl Frontmatter {
             publish: true,
             tags: Vec::new(),
             template: String::from(""),
+            in_sitemap: true
+
         };
         let mut capturing = false;
 

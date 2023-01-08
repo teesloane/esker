@@ -61,6 +61,13 @@ pub const BASE_HTML: &str = r#"<html>
           <li><a href="{{baseurl}}/tags/{{tag}}">{{tag}} ({{tagged_items | length }})</a></li>
           {% endfor %}
         </ul>
+
+        <h3> Sitemap </h3>
+        <ul>
+          {% for link in sitemap %}
+          <li><a href="{{link.url}}">{{link.title}}</a></li>
+          {% endfor %}
+        </ul>
       </aside>
 
     </main>

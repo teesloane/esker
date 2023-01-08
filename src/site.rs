@@ -54,6 +54,10 @@ pub struct Site {
     pub config: Config,
     /// All tags, as collected from frontmatter (TODO: not from content yet!)
     pub tags: HashMap<String, Vec<Link>>,
+
+    /// Sitemap of links to be injected into the Tera context.
+    pub template_sitemap: Vec<Link>
+
 }
 
 impl Site {
@@ -95,6 +99,7 @@ impl Site {
             config: user_config,
             links: SiteLinks::new(),
             tags: HashMap::new(),
+            template_sitemap: Vec::new()
 
         };
 
@@ -147,6 +152,7 @@ impl Site {
                 ctx.insert("baseurl", &self.config.url.clone());
                 ctx.insert("tags", &self.tags);
                 ctx.insert("tag", &tag_name);
+                ctx.insert("sitemap", &self.template_sitemap);
 
                 let tag_file_name = Path::new(tag_name).with_extension("html");
                 let out_path = dir_tags.join(tag_file_name);
@@ -189,7 +195,10 @@ impl Site {
                 if md_file.frontmatter.publish {
                     if let Some(vec_of_files) = markdown_files.get_mut(&md_file.web_path_parents) {
                         self.collect_tags_from_frontmatter(&md_file);
+                        self.template_sitemap.push(Link::new_tag_link_from_md_file(&md_file));
                         vec_of_files.push(md_file);
+
+
                     } else {
                         self.collect_tags_from_frontmatter(&md_file);
                         markdown_files.insert(md_file.web_path_parents.clone(), vec![md_file]);
