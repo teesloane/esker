@@ -293,13 +293,13 @@ impl Site {
 
     fn create_theme_css(&self) {
         if let Some(theme) = THEMES.themes.get("zenburn") {
-            let css = html::css_for_theme_with_class_style(theme, html::ClassStyle::Spaced).unwrap();
+            let css = html::css_for_theme_with_class_style(theme, html::ClassStyle::SpacedPrefixed{prefix: "syntax-"}).unwrap();
             let css_output_path = Path::join(&self.dir_esker_public, Path::new("css/syntax-theme-dark.css"));
             fs::write(css_output_path, &css).expect("Unable to write css theme file");
         }
 
         if let Some(theme) = THEMES.themes.get("solarized-light") {
-            let css = html::css_for_theme_with_class_style(theme, html::ClassStyle::Spaced).unwrap();
+            let css = html::css_for_theme_with_class_style(theme, html::ClassStyle::SpacedPrefixed{prefix: "syntax-"}).unwrap();
             let css_output_path = Path::join(&self.dir_esker_public, Path::new("css/syntax-theme-light.css"));
             fs::write(css_output_path, &css).expect("Unable to write css theme file");
         }
