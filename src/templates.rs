@@ -46,6 +46,9 @@ pub struct Page<'a> {
     url: &'a String,
     summary: &'a Option<String>,
     date_created: String,
+    date_updated: String,
+    date_created_timestamp: i64,
+    date_updated_timestamp: i64,
     tags: &'a Vec<String>
 }
 
@@ -57,13 +60,16 @@ impl Page<'_> {
             backlinks: &md_file.backlinks,
             url: &md_file.full_url,
             summary: &md_file.frontmatter.summary,
-            date_created: md_file.frontmatter.date_created_str(),
+            date_created: util::naive_date_to_str(md_file.frontmatter.date_created),
+            date_updated: util::naive_date_to_str(md_file.frontmatter.date_updated),
+            date_created_timestamp: md_file.frontmatter.date_created_timestamp,
+            date_updated_timestamp: md_file.frontmatter.date_updated_timestamp,
             tags: &md_file.frontmatter.tags
         }
     }
 }
 
-// /// A trimmed down version of MDFile, to be accessed in section files (_index.md)
+/// A trimmed down version of MDFile, to be accessed in section files (_index.md)
 
 #[derive(Serialize)]
 pub struct SectionPage<'a> {

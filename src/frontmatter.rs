@@ -13,7 +13,9 @@ pub struct Frontmatter {
     pub tags: Vec<String>,
     pub publish: bool,
     pub date_created: NaiveDateTime,
+    pub date_created_timestamp: i64,
     pub date_updated: NaiveDateTime,
+    pub date_updated_timestamp: i64,
     pub template: String,
     pub in_sitemap: bool,
 }
@@ -38,14 +40,16 @@ impl Frontmatter {
             .unwrap(),
             filepath: md_file_path.clone(),
             date_created,
+            date_created_timestamp: date_created.timestamp(),
             date_updated,
+            date_updated_timestamp: date_updated.timestamp(),
             summary: None,
             publish: true,
             tags: Vec::new(),
             template: String::from(""),
             in_sitemap: true
-
         };
+
         let mut capturing = false;
 
         if let Ok(lines) = util::read_lines(md_file_path) {
@@ -110,7 +114,10 @@ impl Frontmatter {
                 match lhs {
                     "title" => self.title = rhs.trim().to_string(),
                     "date_created" => match Self::match_possible_dates(rhs) {
-                        Ok(res) => self.date_created = res,
+                        Ok(res) => {
+                            self.date_created = res;
+                            self.date_created_timestamp = res.timestamp();
+                        },
                         Err(_) => {
                             site.errors
                                 .add_invalid_date_created(self.get_filepath_as_str());
@@ -118,7 +125,10 @@ impl Frontmatter {
                     },
 
                     "date_updated" => match Self::match_possible_dates(rhs) {
-                        Ok(res) => self.date_updated = res,
+                        Ok(res) => {
+                            self.date_updated = res;
+                            self.date_updated_timestamp = res.timestamp()
+                        },
                         Err(_) => {
                             site.errors
                                 .add_invalid_date_updated(self.get_filepath_as_str());
@@ -161,9 +171,5 @@ impl Frontmatter {
             .into_os_string()
             .into_string()
             .unwrap();
-    }
-
-    pub fn date_created_str(&self) -> String {
-        return self.date_updated.format("%Y-%m-%d %H:%M").to_string();
     }
 }

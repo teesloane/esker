@@ -1,3 +1,4 @@
+use chrono::NaiveDateTime;
 use chrono::prelude::{DateTime, Local};
 use glob::glob;
 use std::fs::File;
@@ -40,4 +41,8 @@ pub fn exit() -> ! {
 
 pub fn path_to_string(p: &Path) -> String {
     p.display().to_string()
+}
+
+pub fn naive_date_to_str(ndt: NaiveDateTime) -> String {
+    return ndt.format("%Y-%m-%d %H:%M").to_string();
 }

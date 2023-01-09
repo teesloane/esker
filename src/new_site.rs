@@ -91,7 +91,7 @@ pub const LIST_HTML: &str = r#"{% extends "base.html" %}
 {% block content %}
   {{super()}}
   <ol reversed>
-      {% for page in section.pages | reverse %}
+      {% for page in section.pages | sort(attribute="date_created_timestamp") %}
         <li style="list-style-type: none; margin-bottom: 32px">
           <a href="{{page.url}}"> <h3>{{page.title}}</h3> </a>
           <i>{{page.summary}}</i>

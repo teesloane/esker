@@ -1,8 +1,8 @@
 ---
-title: My post!
+title: First post!
 tags: elixir, ernestness
-date_created: 2023-01-12
-date_updated: 2023-01-12
+date_created: 2022-01-12
+date_updated: 2022-01-12
 ---
 
 Hi, I'm really excited to be here.
