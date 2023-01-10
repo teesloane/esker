@@ -55,6 +55,17 @@ pub const BASE_HTML: &str = r#"<html>
       </div>
 
       <aside class="flex: 1; background-color: #333">
+
+        {% if page %}
+        <h3> TOC </h3>
+        <ul>
+          {% for link in page.toc %}
+          <li><a href="{{link.url}}">{{link.title}}</a></li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+
+
         <h3> Tags </h3>
         <ul>
           {% for tag, tagged_items in tags %}

@@ -4,7 +4,7 @@
 {% block content %}
   {{super()}}
   <ol reversed>
-      {% for page in section.pages | sort(attribute="date_created_timestamp")%}
+      {% for page in section.pages | sort(attribute="date_created_timestamp") %}
         <li style="list-style-type: none; margin-bottom: 32px">
           <a href="{{page.url}}"> <h3>{{page.title}}</h3> </a>
           <i>{{page.summary}}</i>

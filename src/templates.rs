@@ -1,7 +1,7 @@
-use std::path::Path;
+use crate::{link::Link, md_file::MdFile, util};
 use serde::Serialize;
+use std::path::Path;
 use tera::Tera;
-use crate::{util, link::Link, md_file::MdFile};
 
 pub fn load_templates(dir_templates: &Path) -> Tera {
     let template_path = format!("{}/**/*.html", util::path_to_string(dir_templates));
@@ -20,7 +20,6 @@ pub fn load_templates(dir_templates: &Path) -> Tera {
     tera
 }
 
-
 // get_template
 // Returns the name of a template (to later render), provided it's found
 // in the tera instance.
@@ -30,10 +29,9 @@ pub fn get_name(tera: &Tera, template: &str) -> String {
     if tera.get_template_names().any(|x| x == template_with_html) {
         return template_with_html;
     } else {
-        return default_template_name
+        return default_template_name;
     }
 }
-
 
 // Structs for tera
 //
@@ -49,7 +47,8 @@ pub struct Page<'a> {
     date_updated: String,
     date_created_timestamp: i64,
     date_updated_timestamp: i64,
-    tags: &'a Vec<String>
+    tags: &'a Vec<String>,
+    toc: &'a Vec<Link>,
 }
 
 impl Page<'_> {
@@ -64,7 +63,8 @@ impl Page<'_> {
             date_updated: util::naive_date_to_str(md_file.frontmatter.date_updated),
             date_created_timestamp: md_file.frontmatter.date_created_timestamp,
             date_updated_timestamp: md_file.frontmatter.date_updated_timestamp,
-            tags: &md_file.frontmatter.tags
+            tags: &md_file.frontmatter.tags,
+            toc: &md_file.toc
         }
     }
 }
@@ -73,15 +73,13 @@ impl Page<'_> {
 
 #[derive(Serialize)]
 pub struct SectionPage<'a> {
-  // front_matter: Frontmatter
-  // file_url:  String,
-  pages: Vec<Page<'a>>
+    // front_matter: Frontmatter
+    // file_url:  String,
+    pages: Vec<Page<'a>>,
 }
 
 impl SectionPage<'_> {
     pub fn new(pages: Vec<Page>) -> SectionPage {
-        SectionPage {
-            pages
-        }
+        SectionPage { pages }
     }
 }

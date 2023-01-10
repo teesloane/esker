@@ -5,7 +5,8 @@ use crate::frontmatter::Frontmatter;
 use crate::link::Link;
 use crate::site::Site;
 use crate::templates;
-use crate::parser::CodeBlockSyntaxHighlight;
+use crate::parser;
+use crate::parser::syntax_highlight::CodeBlockSyntaxHighlight;
 use pulldown_cmark::{html, Event, Options, Parser, Tag};
 use slugify::slugify;
 use std::io;
@@ -26,6 +27,7 @@ pub struct MdFile {
     /// is given a different tera context to render.
     pub is_section: bool,
     pub backlinks: Vec<Link>,
+    pub toc: Vec<Link>,
 }
 
 impl MdFile {
@@ -75,6 +77,7 @@ impl MdFile {
             full_url,
             is_section: if filename == "_index" { true } else { false },
             backlinks: Vec::new(),
+            toc: Vec::new()
         };
 
         md_file
@@ -86,10 +89,12 @@ impl MdFile {
     /// collect links, tags, etc so that they are available the next pass when we render.
     pub fn collect_metadata(&mut self, site: &mut Site) {
         // parse the markdown for writing it. ---
+        // TODO: how can I not clone this here?
+        let raw = self.raw.clone();
         let mut options = Options::empty();
         options.insert(Options::ENABLE_STRIKETHROUGH);
         options.insert(Options::ENABLE_FOOTNOTES);
-        let mut parser = Parser::new_ext(&self.raw, options);
+        let mut parser = Parser::new_ext(&raw, options);
         let mut html_output = String::new();
 
         // -- parser stuff
@@ -99,48 +104,9 @@ impl MdFile {
         // just a text node. So, we need to do some capturing to collect links with proper titles"
         let mut capturing = false;
         let mut link = Link::empty();
-        let parser = parser.map(|event| -> Event {
-            match event {
-                Event::Start(tag) => match tag {
-                    Tag::Link(link_type, ref url, ref title) => {
-                        link.update_vals(
-                            tag,
-                            site,
-                            self.full_url.clone(),
-                            self.frontmatter.title.clone(),
-                        );
-                        capturing = true;
-                        Event::Start(link.for_parser(site))
-                    }
-                    Tag::Image(link_type, url, title) => {
-                        Event::Start(Link::update_img_link(link_type, url, title, site))
-                    }
-                    _ => Event::Start(tag),
-                },
 
-                Event::Text(text) => {
-                    if capturing {
-                        link.title = text.to_string();
-                        capturing = false
-                    }
-                    Event::Text(text)
-                }
-
-                Event::End(tag) => match tag {
-                    Tag::Link(link_type, url, title) => {
-                        site.add_link(link.clone());
-                        Event::End(Tag::Link(link_type, url, title))
-                    }
-                    _ => Event::End(tag),
-                },
-
-                _ => event,
-            }
-        });
-        let parser = CodeBlockSyntaxHighlight::new(parser);
-
-        html::push_html(&mut html_output, parser);
-        self.html = html_output;
+        let parsed_str = parser::new(parser, self, site);
+        self.html = parsed_str;
     }
 
 

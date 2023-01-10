@@ -49,7 +49,7 @@ fn main() {
         }
 
         Some(Commands::DumpSyntax) => {
-            parser::dump_syntax_binary();
+            parser::syntax_highlight::dump_syntax_binary();
 
         }
         None => {}

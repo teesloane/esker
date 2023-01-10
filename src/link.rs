@@ -56,7 +56,7 @@ impl Link {
     pub fn update_vals(
         &mut self,
         tag: Tag,
-        site: &mut Site,
+        site: &Site,
         originating_url: String,
         originating_title: String,
     ) {
@@ -91,7 +91,7 @@ impl Link {
 
     pub fn empty() -> Link {
         Link {
-            url: String::from(""),
+            url: String::new(),
             is_internal: false,
             title: String::from(""),
             originating_file_url: String::from(""),

@@ -8,7 +8,7 @@ use std::{env, fs::create_dir_all, path::PathBuf};
 
 
 
-use crate::parser::THEMES;
+use crate::parser::syntax_highlight::THEMES;
 // use crate::link::SiteLinks;
 use crate::{config::Config, util};
 use crate::{

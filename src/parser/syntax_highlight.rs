@@ -20,14 +20,14 @@ lazy_static! {
 }
 
 lazy_static! {
-    pub static ref THEMES: ThemeSet = from_binary(include_bytes!("../syntaxes/all.themedump"));
+    pub static ref THEMES: ThemeSet = from_binary(include_bytes!("../../syntaxes/all.themedump"));
 }
 
 
 // -- highlighting setup --
 
 fn syntax_set() -> SyntaxSet {
-    dumps::from_uncompressed_data(include_bytes!("../syntaxes/syntax_set.packdump")).unwrap()
+    dumps::from_uncompressed_data(include_bytes!("../../syntaxes/syntax_set.packdump")).unwrap()
 }
 
 // map language name from code block to what syntect wants.
@@ -90,7 +90,7 @@ impl<'a, I: Iterator<Item = Event<'a>>> Iterator for CodeBlockSyntaxHighlight<'a
         }
 
         let mut res = String::new();
-        res.push_str(r#"<pre class="code">"#);
+        res.push_str(r#"<pre class="syntax-code">"#);
         push_code_highlight(&mut res, lang, &code);
         res.push_str("</pre>");
 
