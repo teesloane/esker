@@ -176,6 +176,7 @@ impl Site {
 
     // Fetches all the file paths with a glob
     // then iterates over them and loads them into the struct's memory.
+    // TODO: break this into multiple functions
     pub fn load_files(&mut self) {
         let markdown_files_paths = util::load_files(&self.dir, "**/*.md");
 
@@ -214,7 +215,7 @@ impl Site {
         for (path, vec_md_files) in &mut markdown_files {
             for f in vec_md_files {
                 if f.frontmatter.publish {
-                    f.collect_metadata(self);
+                    f.parse_mardown_to_html(self);
                 }
             }
         }

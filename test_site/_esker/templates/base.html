@@ -45,13 +45,23 @@
         </ul>
         {% endif %}
 
-
         <h3> Tags </h3>
         <ul>
           {% for tag, tagged_items in tags %}
           <li><a href="{{baseurl}}/tags/{{tag}}">{{tag}} ({{tagged_items | length }})</a></li>
           {% endfor %}
         </ul>
+
+        {% if page %}
+          {% if page.related_files | length > 0 %}
+          <h2>Similarly tagged</h2>
+          <ul class="">
+            {% for related_link in page.related_files %}
+            <li><a href="{{related_link.url}}">{{related_link.title}}</a></li>
+            {% endfor %}
+          </ul>
+          {% endif %}
+        {% endif %}
 
         <h3> Sitemap </h3>
         <ul>

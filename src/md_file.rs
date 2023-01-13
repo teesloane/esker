@@ -28,6 +28,7 @@ pub struct MdFile {
     pub is_section: bool,
     pub backlinks: Vec<Link>,
     pub toc: Vec<Link>,
+    pub related_files: Vec<Link>,
 }
 
 impl MdFile {
@@ -77,7 +78,8 @@ impl MdFile {
             full_url,
             is_section: if filename == "_index" { true } else { false },
             backlinks: Vec::new(),
-            toc: Vec::new()
+            toc: Vec::new(),
+            related_files: Vec::new()
         };
 
         md_file
@@ -87,7 +89,7 @@ impl MdFile {
     }
 
     /// collect links, tags, etc so that they are available the next pass when we render.
-    pub fn collect_metadata(&mut self, site: &mut Site) {
+    pub fn parse_mardown_to_html(&mut self, site: &mut Site) {
         // parse the markdown for writing it. ---
         // TODO: how can I not clone this here?
         let raw = self.raw.clone();
@@ -109,10 +111,24 @@ impl MdFile {
         self.html = parsed_str;
     }
 
+    fn get_related_files(&mut self, site: &Site) {
+        let mut related_files: Vec<Link> = Vec::new();
+        for tag in &self.frontmatter.tags {
+            if let Some(tags) = site.tags.get(tag) {
+                for tag_link in tags {
+                    if tag_link.url != self.full_url {
+                        related_files.push(tag_link.clone());
+                    }
+                }
+            }
+        }
+        self.related_files = related_files
+    }
+
 
     /// enables creating "post list" type pages where the "section" context
     /// corresponds to every file in the dir
-    pub fn write_section_html(&self, site: &Site, markdown_files: &HashMap<PathBuf, Vec<MdFile>>) {
+    pub fn write_section_html(&mut self, site: &Site, markdown_files: &HashMap<PathBuf, Vec<MdFile>>) {
         if let Some(section_content) = markdown_files.get(&self.web_path_parents) {
             let serialized_pages: Vec<_> = section_content
                 .iter()
@@ -120,6 +136,8 @@ impl MdFile {
                 .map(|md_file| templates::Page::new(md_file))
                 .collect();
 
+
+            self.get_related_files(&site);
             let mut ctx = Context::new();
             ctx.insert("page", &templates::Page::new(self));
             ctx.insert("pages", &serialized_pages);
@@ -139,7 +157,8 @@ impl MdFile {
     }
 
     /// writes a file to it's specified output path.
-    pub fn write_html(&self, site: &mut Site) {
+    pub fn write_html(&mut self, site: &mut Site) {
+        self.get_related_files(&site);
         let rendered_template = self.render_with_tera(site);
         let prefix = &self.out_path.parent().unwrap();
         fs::create_dir_all(prefix).unwrap();

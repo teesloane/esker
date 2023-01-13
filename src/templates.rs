@@ -49,6 +49,7 @@ pub struct Page<'a> {
     date_updated_timestamp: i64,
     tags: &'a Vec<String>,
     toc: &'a Vec<Link>,
+    related_files: &'a Vec<Link>,
 }
 
 impl Page<'_> {
@@ -64,7 +65,9 @@ impl Page<'_> {
             date_created_timestamp: md_file.frontmatter.date_created_timestamp,
             date_updated_timestamp: md_file.frontmatter.date_updated_timestamp,
             tags: &md_file.frontmatter.tags,
-            toc: &md_file.toc
+            toc: &md_file.toc,
+            related_files: &md_file.related_files
+
         }
     }
 }
