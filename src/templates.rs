@@ -1,10 +1,13 @@
-use crate::{link::Link, md_file::MdFile, util};
+/// this file is responsible for providing structs and their requisite methods
+/// that take internal data and prepare it for being inserted into a tera context.
+
+use crate::{link::Link, md_file::MdFile, util, site::Site};
 use serde::Serialize;
 use std::path::Path;
 use tera::Tera;
 
 pub fn load_templates(dir_templates: &Path) -> Tera {
-    let template_path = format!("{}/**/*.html", util::path_to_string(dir_templates));
+    let template_path = format!("{}/**/*", util::path_to_string(dir_templates));
     let mut tera = match Tera::new(&template_path) {
         Ok(t) => t,
         Err(e) => {
@@ -35,6 +38,21 @@ pub fn get_name(tera: &Tera, template: &str) -> String {
 
 // Structs for tera
 //
+//
+#[derive(Serialize)]
+pub struct Config {
+    title: String,
+    description: String,
+}
+
+impl Config{
+    pub fn new(site: &Site) -> Self {
+        Self {
+            title: site.config.title.clone(),
+            description: site.config.description.clone().unwrap_or("".to_string())
+        }
+    }
+}
 
 #[derive(Serialize)]
 pub struct Page<'a> {

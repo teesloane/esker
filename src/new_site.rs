@@ -124,6 +124,31 @@ pub const LIST_HTML: &str = r#"{% extends "base.html" %}
 {% endblock content %}
 "#;
 
+pub const RSS_XML: &str = r#"
+<?xml version="1.0" encoding="UTF-8"?>
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+      <title>{{ config.title }}</title>
+        <link>{{config.url }}
+        </link>
+        <description>{{ config.description }}</description>
+        <generator>Esker</generator>
+        <language>{{ lang }}</language>
+        <atom:link href="{{ feed_url | safe }}" rel="self" type="application/rss+xml"/>
+        <lastBuildDate>{{ last_updated | date(format="%a, %d %b %Y %H:%M:%S %z") }}</lastBuildDate>
+        {%- for page in pages %}
+        <item>
+            <title>{{ page.title }}</title>
+            <pubDate>{{ page.date | date(format="%a, %d %b %Y %H:%M:%S %z") }}</pubDate>
+            <link>{{ page.permalink | escape_xml | safe }}</link>
+            <guid>{{ page.permalink | escape_xml | safe }}</guid>
+            <description>{% if page.summary %}{{ page.summary }}{% else %}{{ page.content }}{% endif %}</description>
+        </item>
+        {%- endfor %}
+    </channel>
+</rss>
+"#;
+
 
 pub const TAGS_HTML: &str = r#"{% extends "base.html" %}
 {% block title %} Tags {% endblock title %}

@@ -9,6 +9,7 @@ use std::{env, fs::create_dir_all, path::PathBuf};
 
 
 use crate::parser::syntax_highlight::THEMES;
+use crate::templates;
 // use crate::link::SiteLinks;
 use crate::{config::Config, util};
 use crate::{
@@ -109,6 +110,7 @@ impl Site {
         site.create_theme_css();
         site.cp_data();
         site.cp_public();
+        site.build_syndication_pages();
 
         return site;
     }
@@ -160,6 +162,15 @@ impl Site {
                 fs::write(out_path, rendered_template).unwrap();
             }
         }
+    }
+
+    fn build_syndication_pages(&mut self) {
+        let mut ctx = tera::Context::new();
+        ctx.insert("config", &templates::Config::new(self));
+
+        let rendered_template = self.tera.render("feed.rss", &ctx).unwrap();
+        let out_path = self.dir_esker_build.join("feed.rss");
+        fs::write(out_path, rendered_template).unwrap();
     }
 
     pub fn cp_public(&mut self) {
@@ -340,6 +351,7 @@ impl Site {
             files.insert(String::from("templates/default.html"), new_site::DEFAULT_HTML);
             files.insert(String::from("templates/tags.html"), new_site::TAGS_HTML);
             files.insert(String::from("templates/list.html"), new_site::LIST_HTML);
+            files.insert(String::from("templates/feed.rss"), new_site::RSS_XML);
             files.insert(String::from("config.yaml"), new_site::CONFIG_YAML);
 
             // Map over the above strings, turn them into paths, and create them.
