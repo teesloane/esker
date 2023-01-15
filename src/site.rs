@@ -1,12 +1,10 @@
 use colored::*;
-use syntect::html;
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 use std::process::Command;
 use std::{env, fs::create_dir_all, path::PathBuf};
-
-
+use syntect::html;
 
 use crate::parser::syntax_highlight::THEMES;
 // use crate::link::SiteLinks;
@@ -16,8 +14,7 @@ use crate::{
     frontmatter::Frontmatter,
     link::{Link, SiteLinks},
     md_file::MdFile,
-    new_site,
-    parser
+    new_site, parser,
 };
 
 use syntect::highlighting::ThemeSet;
@@ -56,8 +53,7 @@ pub struct Site {
     pub tags: HashMap<String, Vec<Link>>,
 
     /// Sitemap of links to be injected into the Tera context.
-    pub template_sitemap: Vec<Link>
-
+    pub template_sitemap: Vec<Link>,
 }
 
 impl Site {
@@ -70,7 +66,7 @@ impl Site {
         }
 
         let esker_dir = cwd.clone().join("_esker");
-        let dir_esker_build =  esker_dir.join("_site");
+        let dir_esker_build = esker_dir.join("_site");
         let esker_dir_templates = esker_dir.join("templates");
         let user_config = Config::new(&cwd);
 
@@ -99,8 +95,7 @@ impl Site {
             config: user_config,
             links: SiteLinks::new(),
             tags: HashMap::new(),
-            template_sitemap: Vec::new()
-
+            template_sitemap: Vec::new(),
         };
 
         site.create_required_directories_for_build();
@@ -148,16 +143,18 @@ impl Site {
             fs::create_dir_all(dir_tags).expect("failed to create tags directory");
 
             for (tag_name, vec_of_tagged_items) in &self.tags {
-                let mut ctx = tera::Context::new();
-                ctx.insert("baseurl", &self.config.url.clone());
-                ctx.insert("tags", &self.tags);
-                ctx.insert("tag", &tag_name);
-                ctx.insert("sitemap", &self.template_sitemap);
+                if tag_name != "" {
+                    let mut ctx = tera::Context::new();
+                    ctx.insert("baseurl", &self.config.url.clone());
+                    ctx.insert("tags", &self.tags);
+                    ctx.insert("tag", &tag_name);
+                    ctx.insert("sitemap", &self.template_sitemap);
 
-                let tag_file_name = Path::new(tag_name).with_extension("html");
-                let out_path = dir_tags.join(tag_file_name);
-                let rendered_template = self.tera.render("tags.html", &ctx).unwrap();
-                fs::write(out_path, rendered_template).unwrap();
+                    let tag_file_name = Path::new(tag_name).with_extension("html");
+                    let out_path = dir_tags.join(tag_file_name);
+                    let rendered_template = self.tera.render("tags.html", &ctx).unwrap();
+                    fs::write(out_path, rendered_template).unwrap();
+                }
             }
         }
     }
@@ -196,10 +193,9 @@ impl Site {
                 if md_file.frontmatter.publish {
                     if let Some(vec_of_files) = markdown_files.get_mut(&md_file.web_path_parents) {
                         self.collect_tags_from_frontmatter(&md_file);
-                        self.template_sitemap.push(Link::new_tag_link_from_md_file(&md_file));
+                        self.template_sitemap
+                            .push(Link::new_tag_link_from_md_file(&md_file));
                         vec_of_files.push(md_file);
-
-
                     } else {
                         self.collect_tags_from_frontmatter(&md_file);
                         markdown_files.insert(md_file.web_path_parents.clone(), vec![md_file]);
@@ -228,10 +224,10 @@ impl Site {
             for f in vec_md_files {
                 if f.frontmatter.publish {
                     if f.is_section {
-                    f.get_backlinks_for_file(self);
+                        f.get_backlinks_for_file(self);
                         f.write_section_html(self, &markdown_files_clone);
                     } else {
-                    f.get_backlinks_for_file(self);
+                        f.get_backlinks_for_file(self);
                         f.write_html(self);
                     }
                 }
@@ -254,10 +250,8 @@ impl Site {
 
             if let Some(list_of_links_for_tag) = self.tags.get_mut(tag) {
                 list_of_links_for_tag.push(new_tag_link)
-
-            } else  {
+            } else {
                 self.tags.insert(tag.clone(), vec![new_tag_link]);
-
             }
         }
     }
@@ -294,14 +288,28 @@ impl Site {
 
     fn create_theme_css(&self) {
         if let Some(theme) = THEMES.themes.get("zenburn") {
-            let css = html::css_for_theme_with_class_style(theme, html::ClassStyle::SpacedPrefixed{prefix: "syntax-"}).unwrap();
-            let css_output_path = Path::join(&self.dir_esker_public, Path::new("css/syntax-theme-dark.css"));
+            let css = html::css_for_theme_with_class_style(
+                theme,
+                html::ClassStyle::SpacedPrefixed { prefix: "syntax-" },
+            )
+            .unwrap();
+            let css_output_path = Path::join(
+                &self.dir_esker_public,
+                Path::new("css/syntax-theme-dark.css"),
+            );
             fs::write(css_output_path, &css).expect("Unable to write css theme file");
         }
 
         if let Some(theme) = THEMES.themes.get("solarized-light") {
-            let css = html::css_for_theme_with_class_style(theme, html::ClassStyle::SpacedPrefixed{prefix: "syntax-"}).unwrap();
-            let css_output_path = Path::join(&self.dir_esker_public, Path::new("css/syntax-theme-light.css"));
+            let css = html::css_for_theme_with_class_style(
+                theme,
+                html::ClassStyle::SpacedPrefixed { prefix: "syntax-" },
+            )
+            .unwrap();
+            let css_output_path = Path::join(
+                &self.dir_esker_public,
+                Path::new("css/syntax-theme-light.css"),
+            );
             fs::write(css_output_path, &css).expect("Unable to write css theme file");
         }
     }
@@ -337,7 +345,10 @@ impl Site {
             files.insert(String::from("public/js/main.js"), new_site::DEFAULT_JS);
             files.insert(String::from("public/css/main.css"), new_site::DEFAULT_CSS);
             files.insert(String::from("templates/base.html"), new_site::BASE_HTML);
-            files.insert(String::from("templates/default.html"), new_site::DEFAULT_HTML);
+            files.insert(
+                String::from("templates/default.html"),
+                new_site::DEFAULT_HTML,
+            );
             files.insert(String::from("templates/tags.html"), new_site::TAGS_HTML);
             files.insert(String::from("templates/list.html"), new_site::LIST_HTML);
             files.insert(String::from("config.yaml"), new_site::CONFIG_YAML);
