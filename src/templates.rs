@@ -7,7 +7,7 @@ use std::path::Path;
 use tera::Tera;
 
 pub fn load_templates(dir_templates: &Path) -> Tera {
-    let template_path = format!("{}/**/*", util::path_to_string(dir_templates));
+    let template_path = format!("{}/**/*.html", util::path_to_string(dir_templates));
     let mut tera = match Tera::new(&template_path) {
         Ok(t) => t,
         Err(e) => {
@@ -15,6 +15,9 @@ pub fn load_templates(dir_templates: &Path) -> Tera {
             util::exit();
         }
     };
+
+    tera.add_template_file(dir_templates.join("feed.rss"), Some("feed")).unwrap();
+
     tera.autoescape_on(vec![]);
     if tera.templates.is_empty() {
         println!("\nError: No templates found in {:?}\n", template_path);
