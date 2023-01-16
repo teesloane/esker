@@ -9,7 +9,7 @@ use std::{env, fs::create_dir_all, path::PathBuf};
 
 
 use crate::parser::syntax_highlight::THEMES;
-use crate::templates;
+use crate::templates::{self, Page, SectionPage};
 // use crate::link::SiteLinks;
 use crate::{config::Config, util};
 use crate::{
@@ -164,9 +164,21 @@ impl Site {
         }
     }
 
+    /// responsible for rendering a feed.rss template using tera.
     fn build_syndication_pages(&mut self) {
+        let mut all_pages: Vec<Page> = Vec::new();
+
+        for (k, md_files) in &self.markdown_files {
+            for md_file in md_files {
+            let page = Page::new(md_file);
+            all_pages.push(page);
+            }
+        }
+
         let mut ctx = tera::Context::new();
+
         ctx.insert("config", &templates::Config::new(self));
+        ctx.insert("pages", &all_pages);
 
         let rendered_template = self.tera.render("feed.rss", &ctx).unwrap();
         let out_path = self.dir_esker_build.join("feed.rss");

@@ -16,7 +16,7 @@ pub fn load_templates(dir_templates: &Path) -> Tera {
         }
     };
 
-    tera.add_template_file(dir_templates.join("feed.rss"), Some("feed")).unwrap();
+    tera.add_template_file(dir_templates.join("feed.rss"), Some("feed.rss")).unwrap();
 
     tera.autoescape_on(vec![]);
     if tera.templates.is_empty() {
@@ -46,18 +46,20 @@ pub fn get_name(tera: &Tera, template: &str) -> String {
 pub struct Config {
     title: String,
     description: String,
+    url: String
 }
 
 impl Config{
     pub fn new(site: &Site) -> Self {
         Self {
             title: site.config.title.clone(),
-            description: site.config.description.clone().unwrap_or("".to_string())
+            description: site.config.description.clone().unwrap_or("".to_string()),
+            url: site.config.url.clone()
         }
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 pub struct Page<'a> {
     content: &'a String,
     title: &'a String,
@@ -71,6 +73,7 @@ pub struct Page<'a> {
     tags: &'a Vec<String>,
     toc: &'a Vec<Link>,
     related_files: &'a Vec<Link>,
+    is_section: bool
 }
 
 impl Page<'_> {
@@ -87,7 +90,8 @@ impl Page<'_> {
             date_updated_timestamp: md_file.frontmatter.date_updated_timestamp,
             tags: &md_file.frontmatter.tags,
             toc: &md_file.toc,
-            related_files: &md_file.related_files
+            related_files: &md_file.related_files,
+            is_section: md_file.is_section
 
         }
     }
@@ -95,12 +99,11 @@ impl Page<'_> {
 
 /// A trimmed down version of MDFile, to be accessed in section files (_index.md)
 
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 pub struct SectionPage<'a> {
-    // front_matter: Frontmatter
-    // file_url:  String,
-    pages: Vec<Page<'a>>,
+    pub pages: Vec<Page<'a>>,
 }
+
 
 impl SectionPage<'_> {
     pub fn new(pages: Vec<Page>) -> SectionPage {
