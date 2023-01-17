@@ -116,7 +116,7 @@ impl MdFile {
         for tag in &self.frontmatter.tags {
             if let Some(tags) = site.tags.get(tag) {
                 for tag_link in tags {
-                    if tag_link.url != self.full_url {
+                    if tag_link.url != self.full_url && !related_files.contains(&tag_link) {
                         related_files.push(tag_link.clone());
                     }
                 }
