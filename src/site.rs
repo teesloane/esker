@@ -7,6 +7,7 @@ use std::{env, fs::create_dir_all, path::PathBuf};
 use syntect::html;
 
 use crate::parser::syntax_highlight::THEMES;
+use crate::templates::{self, Page, SectionPage};
 // use crate::link::SiteLinks;
 use crate::{config::Config, util};
 use crate::{
@@ -104,6 +105,7 @@ impl Site {
         site.create_theme_css();
         site.cp_data();
         site.cp_public();
+        site.build_syndication_pages();
 
         return site;
     }
@@ -157,6 +159,29 @@ impl Site {
                 }
             }
         }
+    }
+
+    /// responsible for rendering a feed.rss template using tera.
+    fn build_syndication_pages(&mut self) {
+        let mut all_pages: Vec<Page> = Vec::new();
+
+        for (k, md_files) in &self.markdown_files {
+            for md_file in md_files {
+            let page = Page::new(md_file);
+            all_pages.push(page);
+            }
+        }
+
+        all_pages.sort_by(|a, b| b.date_created_timestamp.cmp(&a.date_created_timestamp));
+
+        let mut ctx = tera::Context::new();
+
+        ctx.insert("config", &templates::Config::new(self));
+        ctx.insert("pages", &all_pages);
+
+        let rendered_template = self.tera.render("feed.rss", &ctx).unwrap();
+        let out_path = self.dir_esker_build.join("feed.rss");
+        fs::write(out_path, rendered_template).unwrap();
     }
 
     pub fn cp_public(&mut self) {
@@ -351,6 +376,7 @@ impl Site {
             );
             files.insert(String::from("templates/tags.html"), new_site::TAGS_HTML);
             files.insert(String::from("templates/list.html"), new_site::LIST_HTML);
+            files.insert(String::from("templates/feed.rss"), new_site::RSS_XML);
             files.insert(String::from("config.yaml"), new_site::CONFIG_YAML);
 
             // Map over the above strings, turn them into paths, and create them.

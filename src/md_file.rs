@@ -79,7 +79,7 @@ impl MdFile {
             is_section: if filename == "_index" { true } else { false },
             backlinks: Vec::new(),
             toc: Vec::new(),
-            related_files: Vec::new()
+            related_files: Vec::new(),
         };
 
         md_file

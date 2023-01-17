@@ -24,7 +24,7 @@ impl SiteLinks {
     }
 }
 
-#[derive(Debug, Clone, Serialize, PartialEq)]
+#[derive(Clone, Serialize, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Link {
     pub url: String,
     pub is_internal: bool,
