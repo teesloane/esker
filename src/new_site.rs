@@ -124,8 +124,7 @@ pub const LIST_HTML: &str = r#"{% extends "base.html" %}
 {% endblock content %}
 "#;
 
-pub const RSS_XML: &str = r#"
-<?xml version="1.0" encoding="UTF-8"?>
+pub const RSS_XML: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
 <rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
     <channel>
       <title>{{ config.title }}</title>
@@ -136,10 +135,17 @@ pub const RSS_XML: &str = r#"
           {% if page.is_section == false %}
           <item>
               <title>{{ page.title }}</title>
-              <pubDate>{{ page.date_created_timestamp | date() }}</pubDate>
+
+              <pubDate>{{ page.date_created_timestamp | date(format="%a, %d %b %Y %H:%M:%S %z", timezone="EST")}}</pubDate>
               <link>{{ page.url | escape_xml | safe }}</link>
               <guid>{{ page.url | escape_xml | safe }}</guid>
-              <description>{% if page.summary %}{{ page.summary }}{% else %}{{ page.content | truncate(length=140)}}{% endif %}</description>
+              <description>
+                {% if page.summary %}
+                  {{ page.summary }}
+                {% else %}
+                  {{ page.content | escape_xml | safe }}
+                {% endif %}
+              </description>
           </item>
           {% endif %}
         {% endfor %}
