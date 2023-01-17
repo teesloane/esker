@@ -29,8 +29,8 @@ pub struct Link {
     pub url: String,
     pub is_internal: bool,
     pub title: String,
-    pub originating_file_title: String,
-    pub originating_file_url: String,
+    pub originating_file_title: Option<String>,
+    pub originating_file_url: Option<String>,
 }
 
 // TODO: this could probably be grouped in a file with the parser for better organizations.
@@ -48,8 +48,8 @@ impl Link {
             url: md_file.full_url.clone(),
             is_internal: true,
             title: md_file.frontmatter.title.clone(),
-            originating_file_title: md_file.frontmatter.title.clone(),
-            originating_file_url: md_file.full_url.clone(),
+            originating_file_title: None,
+            originating_file_url: None
         }
     }
 
@@ -57,8 +57,8 @@ impl Link {
         &mut self,
         tag: Tag,
         site: &Site,
-        originating_url: String,
-        originating_title: String,
+        originating_url: Option<String>,
+        originating_title: Option<String>,
     ) {
         match tag {
             Tag::Link(link_type, url, title) => {
@@ -94,8 +94,8 @@ impl Link {
             url: String::new(),
             is_internal: false,
             title: String::from(""),
-            originating_file_url: String::from(""),
-            originating_file_title: String::from(""),
+            originating_file_url: None,
+            originating_file_title: None
         }
     }
 

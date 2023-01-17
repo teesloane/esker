@@ -3,10 +3,10 @@ use std::{fs, path::PathBuf};
 
 use crate::frontmatter::Frontmatter;
 use crate::link::Link;
-use crate::site::Site;
-use crate::templates;
 use crate::parser;
 use crate::parser::syntax_highlight::CodeBlockSyntaxHighlight;
+use crate::site::Site;
+use crate::templates;
 use pulldown_cmark::{html, Event, Options, Parser, Tag};
 use slugify::slugify;
 use std::io;
@@ -125,17 +125,19 @@ impl MdFile {
         self.related_files = related_files
     }
 
-
     /// enables creating "post list" type pages where the "section" context
     /// corresponds to every file in the dir
-    pub fn write_section_html(&mut self, site: &Site, markdown_files: &HashMap<PathBuf, Vec<MdFile>>) {
+    pub fn write_section_html(
+        &mut self,
+        site: &Site,
+        markdown_files: &HashMap<PathBuf, Vec<MdFile>>,
+    ) {
         if let Some(section_content) = markdown_files.get(&self.web_path_parents) {
             let serialized_pages: Vec<_> = section_content
                 .iter()
                 .filter(|md_file| !md_file.is_section)
                 .map(|md_file| templates::Page::new(md_file))
                 .collect();
-
 
             self.get_related_files(&site);
             let mut ctx = Context::new();
@@ -183,9 +185,11 @@ impl MdFile {
     pub fn get_backlinks_for_file(&mut self, site: &Site) {
         let mut out: Vec<Link> = Vec::new();
         for g_link in &site.links.internal {
-            if g_link.url == self.full_url && self.full_url != g_link.originating_file_url {
-                if !out.contains(&g_link) {
-                    out.push(g_link.clone());
+            if let Some(originating_file_url) = &g_link.originating_file_url {
+                if g_link.url == self.full_url && self.full_url != originating_file_url.clone() {
+                    if !out.contains(&g_link) {
+                        out.push(g_link.clone());
+                    }
                 }
             }
         }

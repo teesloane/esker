@@ -25,8 +25,8 @@ pub fn new(parser: Parser, md_file: &mut MdFile, site: &mut Site) -> String {
                     link.update_vals(
                         tag,
                         site,
-                        md_file.full_url.clone(),
-                        md_file.frontmatter.title.clone(),
+                        Some(md_file.full_url.clone()),
+                        Some(md_file.frontmatter.title.clone()),
                     );
                     capturing = true;
                     Event::Start(link.for_parser(site))
