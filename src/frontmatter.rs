@@ -150,6 +150,7 @@ impl Frontmatter {
                             .collect::<Vec<&str>>()
                             .iter()
                             .map(|tag| tag.trim().to_string())
+                            .filter(|tag| tag.to_string() != "")
                             .collect();
                         self.tags = vec;
                     }
