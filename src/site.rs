@@ -175,6 +175,8 @@ impl Site {
             }
         }
 
+        all_pages.sort_by(|a, b| b.date_created_timestamp.cmp(&a.date_created_timestamp));
+
         let mut ctx = tera::Context::new();
 
         ctx.insert("config", &templates::Config::new(self));

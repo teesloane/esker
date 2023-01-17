@@ -59,7 +59,7 @@ impl Config{
     }
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Page<'a> {
     content: &'a String,
     title: &'a String,
@@ -68,7 +68,7 @@ pub struct Page<'a> {
     summary: &'a Option<String>,
     date_created: String,
     date_updated: String,
-    date_created_timestamp: i64,
+    pub date_created_timestamp: i64,
     date_updated_timestamp: i64,
     tags: &'a Vec<String>,
     toc: &'a Vec<Link>,
