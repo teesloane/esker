@@ -6,6 +6,7 @@
       {% for link_tag in tags[tag] %}
         <li>
           <a href={{link_tag.url}}>{{link_tag.title}} </a>
+          <div>{{link_tag.link_type.TaggedItem.date_created}}</div>
         </li>
       {% endfor %}
       </ul>

@@ -138,7 +138,7 @@ impl Site {
 
     /// build_tag_pages will render html pages for each tag,
     /// and is given a tera context with access to tagged_items;
-    /// this allows users to generates html page per tag, that can
+    /// this allows users to generate an html page per tag, that can
     /// link to each page that is thusly tagged.
     fn build_tag_pages(&self) {
         if let Some(dir_tags) = &self.dir_esker_build_tags {
@@ -219,7 +219,7 @@ impl Site {
                     if let Some(vec_of_files) = markdown_files.get_mut(&md_file.web_path_parents) {
                         self.collect_tags_from_frontmatter(&md_file);
                         self.template_sitemap
-                            .push(Link::new_tag_link_from_md_file(&md_file));
+                            .push(Link::new_sitemap_link(&md_file));
                         vec_of_files.push(md_file);
                     } else {
                         self.collect_tags_from_frontmatter(&md_file);

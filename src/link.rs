@@ -24,6 +24,18 @@ impl SiteLinks {
     }
 }
 
+
+#[derive(Clone, Serialize, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub enum EskerLinkType {
+    Default,
+    Toc {heading_level: u8},
+    Backlink,
+    RelatedLink,
+    Tag,
+    TaggedItem {date_created: String},
+    Sitemap {date_created_timestamp: i64}
+}
+
 #[derive(Clone, Serialize, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Link {
     pub url: String,
@@ -31,7 +43,9 @@ pub struct Link {
     pub title: String,
     pub originating_file_title: Option<String>,
     pub originating_file_url: Option<String>,
+    pub link_type: EskerLinkType
 }
+
 
 // TODO: this could probably be grouped in a file with the parser for better organizations.
 // Or, just moved into md_file
@@ -49,7 +63,19 @@ impl Link {
             is_internal: true,
             title: md_file.frontmatter.title.clone(),
             originating_file_title: None,
-            originating_file_url: None
+            originating_file_url: None,
+            link_type: EskerLinkType::TaggedItem { date_created: md_file.frontmatter.date_created.to_string() }
+        }
+    }
+
+    pub fn new_sitemap_link(md_file: &MdFile) -> Self {
+        Self {
+            url: md_file.full_url.clone(),
+            is_internal: true,
+            title: md_file.frontmatter.title.clone(),
+            originating_file_title: None,
+            originating_file_url: None,
+            link_type: EskerLinkType::Sitemap { date_created_timestamp: md_file.frontmatter.date_created_timestamp }
         }
     }
 
@@ -95,7 +121,8 @@ impl Link {
             is_internal: false,
             title: String::from(""),
             originating_file_url: None,
-            originating_file_title: None
+            originating_file_title: None,
+            link_type: EskerLinkType::Default
         }
     }
 

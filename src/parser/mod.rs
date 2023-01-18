@@ -2,7 +2,7 @@ pub mod headlines;
 pub mod links;
 pub mod syntax_highlight;
 
-use crate::{link::Link, md_file::MdFile, site::Site};
+use crate::{link::{Link, EskerLinkType}, md_file::MdFile, site::Site};
 use pulldown_cmark::{html, Event, HeadingLevel, Options, Parser, Tag};
 use slugify::slugify;
 use syntax_highlight::CodeBlockSyntaxHighlight;
@@ -66,11 +66,12 @@ pub fn new(parser: Parser, md_file: &mut MdFile, site: &mut Site) -> String {
                     Event::End(Tag::Link(link_type, url, title))
                 }
 
-                Tag::Heading(a, b, c) => {
+                Tag::Heading(level, b, c) => {
                     capturing_heading = false;
+                    toc_link_placeholder.link_type = EskerLinkType::Toc { heading_level: level as u8 };
                     md_file.toc.push(toc_link_placeholder.clone());
                     toc_link_placeholder = Link::empty();
-                    Event::End(Tag::Heading(a, b, c))
+                    Event::End(Tag::Heading(level, b, c))
                 }
                 _ => Event::End(tag),
             },
