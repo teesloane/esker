@@ -1,3 +1,5 @@
+[![justforfunnoreally.dev badge](https://img.shields.io/badge/justforfunnoreally-dev-9ff)](https://justforfunnoreally.dev)
+
 > Esker is a static site generator for Obsidian.
 
 Esker is alpha software and probably won't work for your Obsidian vault. Continue at your own peril (not recommended for non-technical users). Please note that filing issues will not be replied to until documentation is written (and who knows if even then). Good luck 😘!
