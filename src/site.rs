@@ -1,4 +1,5 @@
 use colored::*;
+use hotwatch::Event;
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
@@ -6,6 +7,7 @@ use std::process::Command;
 use std::{env, fs::create_dir_all, path::PathBuf};
 use syntect::html;
 
+use crate::Commands;
 use crate::parser::syntax_highlight::THEMES;
 use crate::templates::{self, Page, SectionPage};
 // use crate::link::SiteLinks;
@@ -36,8 +38,12 @@ pub struct Site {
     pub dir_esker_templates: PathBuf,
     /// out_path: _esker/_site
     pub dir_esker_build: PathBuf,
+    /// <cwd>/<my_attachment_directory>. Might not exist (if user doesn't put it in config.)
+    pub dir_attachments: Option<PathBuf>,
     /// _esker/public
     dir_esker_public: PathBuf,
+    /// _esker/<my_attachment_folder_name>
+    dir_esker_build_attachments: Option<PathBuf>,
     /// where public will go in _site.
     dir_esker_build_public: PathBuf,
     /// _esker/_site/<tag_url>/*tag_files.html
@@ -52,13 +58,14 @@ pub struct Site {
     pub config: Config,
     /// All tags, as collected from frontmatter (TODO: not from content yet!)
     pub tags: HashMap<String, Vec<Link>>,
-
     /// Sitemap of links to be injected into the Tera context.
     pub template_sitemap: Vec<Link>,
+    /// Which command was run (build, watch, etc.)
+    pub cli_command: Commands
 }
 
 impl Site {
-    pub fn build(dir: Option<PathBuf>) -> Site {
+    pub fn new(dir: Option<PathBuf>, cmd: crate::Commands) -> Self {
         let cwd: PathBuf;
         if let Some(dir) = dir {
             cwd = dir;
@@ -69,7 +76,7 @@ impl Site {
         let esker_dir = cwd.clone().join("_esker");
         let dir_esker_build = esker_dir.join("_site");
         let esker_dir_templates = esker_dir.join("templates");
-        let user_config = Config::new(&cwd);
+        let user_config = Config::new(&cwd, &cmd);
 
         let mut dir_esker_tags: Option<PathBuf>;
         if let Some(tags_dir) = &user_config.tags_url {
@@ -80,6 +87,13 @@ impl Site {
             dir_esker_tags = None;
         }
 
+        let mut dir_attachments = None;
+        let mut dir_esker_build_attachments = None;
+        if let Some(attachment_dir) = &user_config.attachment_directory {
+            dir_attachments = Some(cwd.clone().join(attachment_dir));
+            dir_esker_build_attachments = Some(dir_esker_build.join(attachment_dir));
+        }
+
         let mut site = Site {
             dir: cwd.clone(),
             markdown_files_paths: Vec::new(),
@@ -87,7 +101,9 @@ impl Site {
             invalid_files: Vec::new(),
             dir_esker_templates: esker_dir_templates.clone(),
             dir_esker_build,
+            dir_attachments,
             dir_esker_public: esker_dir.join("public"),
+            dir_esker_build_attachments,
             dir_esker_build_public: esker_dir.join("_site/public"),
             dir_esker: esker_dir,
             dir_esker_build_tags: dir_esker_tags,
@@ -97,17 +113,46 @@ impl Site {
             links: SiteLinks::new(),
             tags: HashMap::new(),
             template_sitemap: Vec::new(),
+            cli_command: cmd.clone()
         };
 
-        site.create_required_directories_for_build();
-        site.load_files();
-        site.build_tag_pages();
-        site.create_theme_css();
-        site.cp_data();
-        site.cp_public();
-        site.build_syndication_pages();
-
         return site;
+    }
+
+    pub fn build(&mut self) {
+        self.create_required_directories_for_build();
+        self.load_files();
+        self.build_tag_pages();
+        self.create_theme_css();
+        self.cp_data();
+        self.cp_public();
+        self.build_syndication_pages();
+    }
+
+    fn rebuild(&mut self) {
+        fs::remove_dir_all(&self.dir_esker_build).expect("failed to delete _site");
+
+        self.config = Config::new(&self.dir, &self.cli_command);
+        self.tera = crate::templates::load_templates(&self.dir_esker_templates);
+        self.markdown_files.clear();
+        self.markdown_files_paths.clear();
+        self.invalid_files.clear();
+        self.tags.clear();
+        self.template_sitemap.clear();
+        self.build();
+    }
+
+
+    fn rebuild_markdown(&mut self) {
+        self.markdown_files.clear();
+        self.markdown_files_paths.clear();
+        self.invalid_files.clear();
+        self.tags.clear();
+        self.template_sitemap.clear();
+
+        self.load_files();
+        self.build_tag_pages();
+        self.build_syndication_pages();
     }
 
     fn create_required_directories_for_build(&self) {
@@ -121,15 +166,32 @@ impl Site {
         }
     }
 
+    pub fn cp_public(&mut self) {
+        fs::remove_dir_all(&self.dir_esker_build_public).unwrap();
+        create_dir_all(self.dir_esker_build_public.clone()).unwrap();
+        Command::new("cp")
+            .arg("-n")
+            .arg("-r")
+            .arg(self.dir_esker_public.display().to_string())
+            .arg(self.dir_esker_build.display().to_string())
+            .output()
+            .expect("Internal error: failed to copy data directory to _site.");
+    }
+
     /// For now we shell out to cp on unix because I don't want to figure this out in rust.
     /// copies data and public folder to their respective destinations
     pub fn cp_data(&mut self) {
-        if let Some(attachment_dir) = &self.config.attachment_directory {
-            let dir_attachments = self.dir.join(attachment_dir);
+        if let Some(dir_attachment_site) = &self.dir_esker_build_attachments {
+            if Path::new(dir_attachment_site).is_dir() {
+                fs::remove_dir_all(dir_attachment_site).unwrap();
+            }
+        }
+
+        if let Some(attachment_dir) = &self.dir_attachments {
             Command::new("cp")
                 .arg("-n")
                 .arg("-r")
-                .arg(dir_attachments.display().to_string())
+                .arg(attachment_dir.display().to_string())
                 .arg(self.dir_esker_build.display().to_string())
                 .output()
                 .expect("Internal error: failed to copy data directory to _site.");
@@ -149,6 +211,7 @@ impl Site {
                     let mut ctx = tera::Context::new();
                     ctx.insert("baseurl", &self.config.url.clone());
                     ctx.insert("tags", &self.tags);
+                    ctx.insert("config", &templates::Config::new(self));
                     ctx.insert("tag", &tag_name);
                     ctx.insert("sitemap", &self.template_sitemap);
 
@@ -167,8 +230,8 @@ impl Site {
 
         for (k, md_files) in &self.markdown_files {
             for md_file in md_files {
-            let page = Page::new(md_file);
-            all_pages.push(page);
+                let page = Page::new(md_file);
+                all_pages.push(page);
             }
         }
 
@@ -182,18 +245,6 @@ impl Site {
         let rendered_template = self.tera.render("feed.rss", &ctx).unwrap();
         let out_path = self.dir_esker_build.join("feed.rss");
         fs::write(out_path, rendered_template).unwrap();
-    }
-
-    pub fn cp_public(&mut self) {
-        // for some reason I need to create _site/dest so cp works...
-        create_dir_all(self.dir_esker_build_public.clone()).unwrap();
-        Command::new("cp")
-            .arg("-n")
-            .arg("-r")
-            .arg(self.dir_esker_public.display().to_string())
-            .arg(self.dir_esker_build.display().to_string())
-            .output()
-            .expect("Internal error: failed to copy data directory to _site.");
     }
 
     // Fetches all the file paths with a glob
@@ -218,8 +269,7 @@ impl Site {
                 if md_file.frontmatter.publish {
                     if let Some(vec_of_files) = markdown_files.get_mut(&md_file.web_path_parents) {
                         self.collect_tags_from_frontmatter(&md_file);
-                        self.template_sitemap
-                            .push(Link::new_sitemap_link(&md_file));
+                        self.template_sitemap.push(Link::new_sitemap_link(&md_file));
                         vec_of_files.push(md_file);
                     } else {
                         self.collect_tags_from_frontmatter(&md_file);
@@ -396,6 +446,49 @@ impl Site {
                 " Success ".green().on_black(),
                 dir_esker
             );
+        }
+    }
+
+    pub fn handle_watch_event(&mut self, event: Event) {
+        match event {
+            Event::Write(path) | Event::Create(path) | Event::Remove(path) => {
+                // NOTE: this removes the last element if it's a file and removes
+                // all prefixing path parents from the current working directory.
+                let stripped_path = util::strip_pwd(&self.dir, &path);
+
+                if let Some(ext) = path.extension() {
+                    if ext == "md" {
+                        self.rebuild_markdown();
+                    }
+                }
+
+                // handle public folder
+                if stripped_path.starts_with("_esker/public") {
+                    self.cp_public()
+                }
+
+                // handle templates and config file.
+                if stripped_path.starts_with("_esker/templates") {
+                    self.rebuild()
+                }
+
+                if let Some(filename) = path.file_name() {
+                    if filename == "config.yaml" {
+                    self.rebuild()
+                    }
+                }
+
+                if let Some(dir_attachments) = &self.dir_attachments {
+                    let mut dir_attachments = dir_attachments.clone();
+                    if let Some(dir_attachments_name) = dir_attachments.file_name() {
+                        if stripped_path.starts_with(dir_attachments_name) {
+                            self.cp_data();
+                        }
+                    }
+                }
+            }
+
+            _ => (),
         }
     }
 }

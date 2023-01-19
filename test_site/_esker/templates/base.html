@@ -3,6 +3,9 @@
     <meta charset="utf-8">
     <title>My Site - {% block title %} {% endblock title %}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta
+  name="{{config.title}}"
+  content="{{config.description}}" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     <script src="{{baseurl}}/public/js/main.js"></script>
     <link rel="stylesheet" href="{{baseurl}}/public/css/syntax-theme-dark.css" type="text/css" media="screen" />
@@ -34,7 +37,7 @@
         {% endif %}
       </div>
 
-      <aside class="flex: 1; background-color: #333">
+      <aside style="display: flex; flex-direction: column; margin-left: 64px;">
 
         {% if page %}
         <h3> TOC </h3>
@@ -48,7 +51,7 @@
         <h3> Tags </h3>
         <ul>
           {% for tag, tagged_items in tags %}
-          <li><a href="{{baseurl}}/tags/{{tag}}">{{tag}} ({{tagged_items | length }})</a></li>
+          <li><a href="{{baseurl}}/tags/{{tag}}.html">{{tag}} ({{tagged_items | length }})</a></li>
           {% endfor %}
         </ul>
 

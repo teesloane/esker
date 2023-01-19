@@ -39,12 +39,7 @@ impl MdFile {
         // AS WELL as the "web_path" which is the part that follow your domain name: <mydomain.com>/this-is-the-web-path.
 
         // turns; /Users/tees/development/tees/esker/test-site/foo/bar.md" -> test-site/foo/
-        let web_path_parents = path
-            .strip_prefix(site.dir.clone())
-            .unwrap()
-            .parent()
-            .unwrap()
-            .to_path_buf();
+        let web_path_parents = crate::util::strip_pwd(&site.dir, &path);
 
         let filename = path.file_stem().unwrap().to_str().unwrap().to_string();
         let mut out_file_path_slugified = slugify!(&filename);
@@ -145,6 +140,7 @@ impl MdFile {
             ctx.insert("pages", &serialized_pages);
             ctx.insert("baseurl", &site.config.url.clone());
             ctx.insert("section", &templates::SectionPage::new(serialized_pages));
+            ctx.insert("config", &templates::Config::new(site));
             ctx.insert("tags", &site.tags);
             ctx.insert("tags", &site.tags);
             ctx.insert("sitemap", &site.template_sitemap);
@@ -176,6 +172,7 @@ impl MdFile {
         ctx.insert("page", &templates::Page::new(self));
         ctx.insert("baseurl", &site.config.url.clone());
         ctx.insert("tags", &site.tags);
+        ctx.insert("config", &templates::Config::new(site));
         ctx.insert("sitemap", &site.template_sitemap);
         let template_name = templates::get_name(&site.tera, &self.frontmatter.template);
         let rendered_template = site.tera.render(&template_name, &ctx).unwrap();
