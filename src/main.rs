@@ -12,22 +12,17 @@ pub mod site;
 pub mod templates;
 pub mod util;
 
-use axum::{
-    http::StatusCode, routing::get_service, Router,
-};
+use axum::{http::StatusCode, routing::get_service, Router};
 use clap::{Parser, Subcommand};
 use hotwatch::Hotwatch;
+use parser::syntax_highlight::dump_syntax_binary;
 use site::Site;
-use std::{
-    net::SocketAddr,
-    path::PathBuf,
-    thread,
-    time::Duration,
-};
+use std::{net::SocketAddr, path::PathBuf, thread, time::Duration};
 use tower_http::services::ServeDir;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
+#[command(arg_required_else_help(true))]
 pub struct Cli {
     /// Directory of where you want to run esker
     #[arg(short, long, value_name = "DIR", global = true)]
@@ -43,10 +38,13 @@ pub struct Cli {
 
 #[derive(Subcommand, Debug, Clone)]
 pub enum Commands {
-    /// Build your site
+    /// Compile your site to /_esker/_site
     Build,
+    #[command(hide = true)]
     DumpSyntax,
+    /// Create a new _esker site in your directory.
     New,
+    /// Run a local server and reload your site on change.
     Watch {
         #[clap(short, long, default_value_t = 8080)]
         port: u16,
@@ -58,22 +56,13 @@ async fn main() {
     let cli = Cli::parse();
 
     match &cli.command {
-        Some(Commands::Watch { port }) => {
-            watch(Commands::Watch { port: *port }, cli).await;
-        }
-
-        Some(Commands::New) => {
-            new_site::init(cli.dir);
-        }
+        Some(Commands::Watch { port }) => watch(Commands::Watch { port: *port }, cli).await,
+        Some(Commands::New) => new_site::init(cli.dir),
+        Some(Commands::DumpSyntax) => dump_syntax_binary(),
         Some(Commands::Build) => {
             let mut site = Site::new(Commands::Build, cli);
             site.build()
         }
-
-        Some(Commands::DumpSyntax) => {
-            parser::syntax_highlight::dump_syntax_binary();
-        }
-        // TODO: run help if nothing else is done.
         None => {}
     }
 }

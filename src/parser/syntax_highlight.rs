@@ -166,7 +166,6 @@ impl<'a> HighlightSpec<'a> {
 
 
 // Syntect stuff
-
 pub fn dump_syntax_binary() {
     let file = "syntaxes/syntax_set.packdump";
     println!("Dumping syntax binary to {}", file);

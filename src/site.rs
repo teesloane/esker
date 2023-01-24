@@ -7,9 +7,9 @@ use std::process::Command;
 use std::{env, fs::create_dir_all, path::PathBuf};
 use syntect::html;
 
-use crate::Commands;
 use crate::parser::syntax_highlight::THEMES;
 use crate::templates::{self, Page};
+use crate::Commands;
 // use crate::link::SiteLinks;
 use crate::{config::Config, util};
 use crate::{
@@ -19,8 +19,6 @@ use crate::{
     md_file::MdFile,
     new_site,
 };
-
-
 
 #[derive(Debug)]
 pub struct Site {
@@ -33,7 +31,6 @@ pub struct Site {
     /// files that have invalid frontmatter:
     invalid_files: Vec<PathBuf>,
     /// esker directory that gets generated in the vault: _esker
-    ///
     pub dir_esker: PathBuf,
     /// esker directory for templates
     pub dir_esker_templates: PathBuf,
@@ -62,7 +59,7 @@ pub struct Site {
     /// Sitemap of links to be injected into the Tera context.
     pub template_sitemap: Vec<Link>,
     /// Which command was run (build, watch, etc.)
-    pub cli_command: Commands
+    pub cli_command: Commands,
 }
 
 impl Site {
@@ -114,7 +111,7 @@ impl Site {
             links: SiteLinks::new(),
             tags: HashMap::new(),
             template_sitemap: Vec::new(),
-            cli_command: cmd.clone()
+            cli_command: cmd.clone(),
         };
 
         return site;
@@ -143,7 +140,6 @@ impl Site {
         self.template_sitemap.clear();
         self.build();
     }
-
 
     fn rebuild_markdown(&mut self) {
         self.errors.clear();
@@ -468,7 +464,7 @@ impl Site {
 
                 if let Some(filename) = path.file_name() {
                     if filename == "config.yaml" {
-                    self.rebuild()
+                        self.rebuild()
                     }
                 }
 
