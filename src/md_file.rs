@@ -6,7 +6,6 @@ use crate::link::Link;
 use crate::parser;
 use crate::site::Site;
 use crate::templates;
-use pulldown_cmark::{Options, Parser};
 use slugify::slugify;
 use std::io;
 use std::io::{BufRead, BufReader};
@@ -14,7 +13,7 @@ use tera::Context;
 
 #[derive(Debug, Clone)]
 pub struct MdFile {
-    raw: String,
+    pub raw: String,
     pub html: String,
     path: PathBuf,
     pub web_path_parents: PathBuf,
@@ -83,25 +82,8 @@ impl MdFile {
     }
 
     /// collect links, tags, etc so that they are available the next pass when we render.
-    pub fn parse_mardown_to_html(&mut self, site: &mut Site) {
-        // parse the markdown for writing it. ---
-        // TODO: how can I not clone this here?
-        let raw = self.raw.clone();
-        let mut options = Options::empty();
-        options.insert(Options::ENABLE_STRIKETHROUGH);
-        options.insert(Options::ENABLE_FOOTNOTES);
-        let mut parser = Parser::new_ext(&raw, options);
-        let mut html_output = String::new();
-
-        // -- parser stuff
-
-        // HACK: when the parser captures links everything [<in between brackets](<my link url>)
-        // doesn't actually get captured - instead, what's in betwene [the brackets], is
-        // just a text node. So, we need to do some capturing to collect links with proper titles"
-        let mut capturing = false;
-        let mut link = Link::empty();
-
-        let parsed_str = parser::new(parser, self, site);
+    pub fn parse_markdown_to_html(&mut self, site: &mut Site) {
+        let parsed_str = parser::new(self, site);
         self.html = parsed_str;
     }
 

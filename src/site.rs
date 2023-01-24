@@ -267,12 +267,13 @@ impl Site {
         markdown_files_paths_filtered.iter().for_each(|f| {
             if let Some(fm) = Frontmatter::new(self, f) {
                 let read_file = fs::read_to_string(f).expect("Unable to open file");
-                let md_file = MdFile::new(self, read_file, f.to_path_buf(), fm);
+                let mut md_file = MdFile::new(self, read_file, f.to_path_buf(), fm);
 
                 if md_file.frontmatter.publish {
                     if let Some(vec_of_files) = markdown_files.get_mut(&md_file.web_path_parents) {
                         self.collect_tags_from_frontmatter(&md_file);
                         self.template_sitemap.push(Link::new_sitemap_link(&md_file));
+                        md_file.parse_markdown_to_html(self);
                         vec_of_files.push(md_file);
                     } else {
                         self.collect_tags_from_frontmatter(&md_file);
@@ -284,17 +285,7 @@ impl Site {
             }
         });
 
-        // Loop #1 - Let's get all the metadata, for things like backlinks, tags, etc.
-
-        for (path, vec_md_files) in &mut markdown_files {
-            for f in vec_md_files {
-                if f.frontmatter.publish {
-                    f.parse_mardown_to_html(self);
-                }
-            }
-        }
-
-        // TODO: not sure how to not have to clone this.
+        // TODO (i tried, i don't know): not sure how to not have to clone this.
         let markdown_files_clone = markdown_files.clone();
 
         // Loop #2 - Let's render it!
