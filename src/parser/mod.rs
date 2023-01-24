@@ -16,7 +16,6 @@ pub fn new(md_file: &mut MdFile, site: &mut Site) -> String {
     options.insert(Options::ENABLE_STRIKETHROUGH);
     options.insert(Options::ENABLE_FOOTNOTES);
     let mut parser = Parser::new_ext(&raw, options);
-    let mut html_output = String::new();
 
     // -- parser stuff
 
@@ -29,7 +28,7 @@ pub fn new(md_file: &mut MdFile, site: &mut Site) -> String {
     let parser = parser.map(|event| -> Event {
         match event {
             Event::Start(tag) => match tag {
-                Tag::Link(link_type, ref url, ref title) => {
+                Tag::Link(_link_type, ref _url, ref _title) => {
                     link.fill_from_parser(
                         tag,
                         site,

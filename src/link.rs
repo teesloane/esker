@@ -84,7 +84,7 @@ impl Link {
         originating_title: Option<String>,
     ) {
         match tag {
-            Tag::Link(link_type, url, title) => {
+            Tag::Link(_link_type, url, title) => {
                 let mut url_str = Self::slugify_internal_url(url.to_string().clone());
                 if Self::is_internal(&url) {
                     let url_as_path = PathBuf::from(&url_str).with_extension("html");

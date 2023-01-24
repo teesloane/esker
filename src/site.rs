@@ -66,9 +66,9 @@ pub struct Site {
 }
 
 impl Site {
-    pub fn new(dir: Option<PathBuf>, cmd: crate::Commands) -> Self {
+    pub fn new(cmd: crate::Commands, cli: crate::Cli) -> Self {
         let cwd: PathBuf;
-        if let Some(dir) = dir {
+        if let Some(dir) = cli.dir {
             cwd = dir;
         } else {
             cwd = env::current_dir().unwrap();
@@ -209,7 +209,7 @@ impl Site {
         if let Some(dir_tags) = &self.dir_esker_site_tags {
             fs::create_dir_all(dir_tags).expect("failed to create tags directory");
 
-            for (tag_name, vec_of_tagged_items) in &self.tags {
+            for (tag_name, _vec_of_tagged_items) in &self.tags {
                 if tag_name != "" {
                     let mut ctx = tera::Context::new();
                     ctx.insert("baseurl", &self.config.url.clone());
@@ -231,7 +231,7 @@ impl Site {
     fn build_syndication_pages(&mut self) {
         let mut all_pages: Vec<Page> = Vec::new();
 
-        for (k, md_files) in &self.markdown_files {
+        for (_k, md_files) in &self.markdown_files {
             for md_file in md_files {
                 let page = Page::new(md_file);
                 all_pages.push(page);
@@ -289,7 +289,7 @@ impl Site {
         let markdown_files_clone = markdown_files.clone();
 
         // Loop #2 - Let's render it!
-        for (path, vec_md_files) in &mut markdown_files {
+        for (_path, vec_md_files) in &mut markdown_files {
             for f in vec_md_files {
                 if f.frontmatter.publish {
                     if f.is_section {

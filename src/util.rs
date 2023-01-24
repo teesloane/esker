@@ -16,7 +16,6 @@ pub fn load_files(cwd: &PathBuf, pattern: &str) -> Vec<PathBuf> {
 // steal code: https://stackoverflow.com/a/64148190
 pub fn iso8601(st: std::time::SystemTime) -> String {
     let dt: DateTime<Local> = st.clone().into();
-    let dtl = dt.naive_local();
     format!("{}", dt.format("%F"))
 }
 

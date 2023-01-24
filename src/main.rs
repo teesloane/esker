@@ -1,6 +1,5 @@
 #![allow(dead_code)]
 #![allow(unused_mut)]
-#![allow(unused_variables)]
 
 pub mod config;
 pub mod errors;
@@ -29,10 +28,14 @@ use tower_http::services::ServeDir;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
-struct Cli {
+pub struct Cli {
     /// Directory of where you want to run esker
     #[arg(short, long, value_name = "DIR", global = true)]
     dir: Option<PathBuf>,
+
+    /// Whether or not to print errors
+    #[arg(short, long, global = true)]
+    verbose: bool,
 
     #[command(subcommand)]
     command: Option<Commands>,
@@ -56,26 +59,27 @@ async fn main() {
 
     match &cli.command {
         Some(Commands::Watch { port }) => {
-            watch(cli.dir, Commands::Watch { port: *port }).await;
+            watch(Commands::Watch { port: *port }, cli).await;
         }
 
         Some(Commands::New) => {
             new_site::init(cli.dir);
         }
         Some(Commands::Build) => {
-            let mut site = Site::new(cli.dir, Commands::Build);
+            let mut site = Site::new(Commands::Build, cli);
             site.build()
         }
 
         Some(Commands::DumpSyntax) => {
             parser::syntax_highlight::dump_syntax_binary();
         }
+        // TODO: run help if nothing else is done.
         None => {}
     }
 }
 
-async fn watch(dir: Option<PathBuf>, cmd: Commands) {
-    let mut site = Site::new(dir, cmd.clone());
+async fn watch(cmd: Commands, cli: Cli) {
+    let mut site = Site::new(cmd.clone(), cli);
     site.build();
     let output_directory = site.dir_esker_site.clone();
 

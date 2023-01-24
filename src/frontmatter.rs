@@ -92,7 +92,7 @@ impl Frontmatter {
 
         return match NaiveDateTime::parse_from_str(date_str, "%Y-%m-%d") {
             Ok(dc) => Ok(dc),
-            Err(e) => {
+            Err(_e) => {
                 // try adding extra HH/MM to datestring to see if that works, otherwise giveup.
                 let mut new_date_str_attempt = String::from(date_str);
                 new_date_str_attempt.push_str(" 17:00");

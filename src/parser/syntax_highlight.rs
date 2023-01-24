@@ -109,7 +109,7 @@ fn push_code_highlight<S: AsRef<str>>(s: &mut String, lang: Option<S>, code: &st
                 s.push_str("</code>");
             }
 
-            Err(err) => {
+            Err(_err) => {
                 panic!();
             }
         }

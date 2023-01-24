@@ -43,11 +43,6 @@ impl MdFile {
         let mut out_file_path_slugified = slugify!(&filename);
         // takes slugified file name and adds html extension
         let web_path_stem = PathBuf::from(out_file_path_slugified.clone()).with_extension("html");
-        let web_path_str = web_path_stem
-            .clone()
-            .into_os_string()
-            .into_string()
-            .unwrap();
         let out_path = PathBuf::from(&site.dir_esker_site)
             .join(web_path_parents.join(PathBuf::from(&web_path_stem)));
 
@@ -130,7 +125,6 @@ impl MdFile {
             let rendered_template = site.tera.render(&template_name, &ctx).unwrap();
             let prefix = &self.out_path.parent().unwrap();
             fs::create_dir_all(prefix).unwrap();
-            let mut file = fs::File::create(&self.out_path).expect("couldn't create file");
             fs::write(&self.out_path, rendered_template).expect("Unable to write file");
         }
     }
@@ -148,10 +142,8 @@ impl MdFile {
         let template_name = templates::get_name(&site.tera, &self.frontmatter.template);
         let rendered_template = site.tera.render(&template_name, &ctx).unwrap();
 
-
         let prefix = &self.out_path.parent().unwrap();
         fs::create_dir_all(prefix).unwrap();
-        let mut file = fs::File::create(&self.out_path).expect("couldn't create file");
         fs::write(&self.out_path, rendered_template).expect("Unable to write file");
     }
 
@@ -176,7 +168,7 @@ impl MdFile {
         let mut reader = BufReader::new(input_file);
         let mut in_frontmatter = false;
 
-        for (i, line) in reader.lines().enumerate() {
+        for (_i, line) in reader.lines().enumerate() {
             // Write the line to the output file
             let line = line?;
             if line == "---" && in_frontmatter == false {
