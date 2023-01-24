@@ -3,7 +3,7 @@ use chrono::NaiveDateTime;
 use glob::glob;
 use std::fs::File;
 use std::io::{self, BufRead};
-use std::path::{self, Path, PathBuf};
+use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 pub fn load_files(cwd: &PathBuf, pattern: &str) -> Vec<PathBuf> {

@@ -1,7 +1,6 @@
 #![allow(dead_code)]
 #![allow(unused_mut)]
 #![allow(unused_variables)]
-#![allow(unused_imports)]
 
 pub mod config;
 pub mod errors;
@@ -15,19 +14,18 @@ pub mod templates;
 pub mod util;
 
 use axum::{
-    http::StatusCode, response::Html, response::IntoResponse, routing::get_service, Router,
+    http::StatusCode, routing::get_service, Router,
 };
 use clap::{Parser, Subcommand};
 use hotwatch::Hotwatch;
 use site::Site;
 use std::{
-    io,
-    net::{SocketAddr, TcpListener},
+    net::SocketAddr,
     path::PathBuf,
     thread,
     time::Duration,
 };
-use tower_http::{services::ServeDir, trace::TraceLayer};
+use tower_http::services::ServeDir;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -62,7 +60,7 @@ async fn main() {
         }
 
         Some(Commands::New) => {
-            Site::init(cli.dir);
+            new_site::init(cli.dir);
         }
         Some(Commands::Build) => {
             let mut site = Site::new(cli.dir, Commands::Build);

@@ -9,7 +9,7 @@ use syntect::html;
 
 use crate::Commands;
 use crate::parser::syntax_highlight::THEMES;
-use crate::templates::{self, Page, SectionPage};
+use crate::templates::{self, Page};
 // use crate::link::SiteLinks;
 use crate::{config::Config, util};
 use crate::{
@@ -17,10 +17,10 @@ use crate::{
     frontmatter::Frontmatter,
     link::{Link, SiteLinks},
     md_file::MdFile,
-    new_site, parser,
+    new_site,
 };
 
-use syntect::highlighting::ThemeSet;
+
 
 #[derive(Debug)]
 pub struct Site {

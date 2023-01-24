@@ -3,7 +3,7 @@ pub mod links;
 pub mod syntax_highlight;
 
 use crate::{link::{Link, EskerLinkType}, md_file::MdFile, site::Site};
-use pulldown_cmark::{html, Event, HeadingLevel, Options, Parser, Tag};
+use pulldown_cmark::{html, Event, Parser, Tag};
 use slugify::slugify;
 use syntax_highlight::CodeBlockSyntaxHighlight;
 

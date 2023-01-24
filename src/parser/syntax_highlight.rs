@@ -7,7 +7,7 @@ use slugify::slugify;
 use syntect::dumps::from_binary;
 use syntect::parsing::SyntaxReference;
 use syntect::{
-    dumps, highlighting::ThemeSet, html, html::ClassStyle, html::ClassedHTMLGenerator,
+    dumps, highlighting::ThemeSet, html::ClassStyle, html::ClassedHTMLGenerator,
     parsing::SyntaxSet, util::LinesWithEndings,
 };
 
