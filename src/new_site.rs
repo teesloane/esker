@@ -1,3 +1,8 @@
+use colored::*;
+use std::collections::HashMap;
+use std::fs;
+use std::{env, path::PathBuf};
+
 pub const CONFIG_YAML: &str = r#"# site-wide configuration:
 # your sites url
 url: "http://localhost:8080"
@@ -103,7 +108,7 @@ pub const BASE_HTML: &str = r#"<html>
 
 "#;
 
-pub const DEFAULT_HTML: &str = r#"{% extends "base.html" %}
+pub const SINGLE_HTML: &str = r#"{% extends "base.html" %}
 {% block title %} {{page.title}} {% endblock title %}
 "#;
 
@@ -153,7 +158,6 @@ pub const RSS_XML: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
     </channel>
 </rss>
 "#;
-
 
 pub const TAGS_HTML: &str = r#"{% extends "base.html" %}
 {% block title %} Tags {% endblock title %}
@@ -251,3 +255,56 @@ img { max-width: 100%; }
   color: var(--color-alt);
 }
 "#;
+
+pub fn init(dir: Option<PathBuf>) {
+    let cwd: PathBuf;
+    if let Some(dir) = dir {
+        cwd = dir;
+    } else {
+        cwd = env::current_dir().unwrap();
+    }
+
+    let dir_esker = cwd.join("_esker");
+    if fs::metadata(&dir_esker).is_ok() {
+        println!(
+            "{}: An '_esker' site already exists in this directory.",
+            " Failed ".yellow().on_black()
+        );
+    } else {
+        let dirs = vec![
+            "templates/",
+            "templates/partials",
+            "sass",
+            "public/css",
+            "public/js",
+            "_site",
+        ];
+
+        let mut files = HashMap::new();
+        files.insert(String::from("public/js/main.js"), DEFAULT_JS);
+        files.insert(String::from("public/css/main.css"), DEFAULT_CSS);
+        files.insert(String::from("templates/base.html"), BASE_HTML);
+        files.insert(String::from("templates/single.html"), SINGLE_HTML);
+        files.insert(String::from("templates/tags.html"), TAGS_HTML);
+        files.insert(String::from("templates/list.html"), LIST_HTML);
+        files.insert(String::from("templates/feed.rss"), RSS_XML);
+        files.insert(String::from("config.yaml"), CONFIG_YAML);
+
+        // Map over the above strings, turn them into paths, and create them.
+        for &dir in &dirs {
+            let joined_dir = dir_esker.join(dir);
+            fs::create_dir_all(joined_dir).expect("Couldn't create a new firn, directory");
+        }
+
+        for (filename, file_contents) in files {
+            let joined_dir = dir_esker.join(filename);
+            fs::write(joined_dir, file_contents).expect("Unable to write new site layout files.");
+        }
+
+        println!(
+            "{}: created a new esker site at: {:?}",
+            " Success ".green().on_black(),
+            dir_esker
+        );
+    }
+}

@@ -3,13 +3,20 @@ pub mod links;
 pub mod syntax_highlight;
 
 use crate::{link::{Link, EskerLinkType}, md_file::MdFile, site::Site};
-use pulldown_cmark::{html, Event, HeadingLevel, Options, Parser, Tag};
+use pulldown_cmark::{html, Event, Parser, Tag, Options};
 use slugify::slugify;
 use syntax_highlight::CodeBlockSyntaxHighlight;
 
 use self::headlines::ParseHeadlines;
 
-pub fn new(parser: Parser, md_file: &mut MdFile, site: &mut Site) -> String {
+pub fn new(md_file: &mut MdFile, site: &mut Site) -> String {
+    // TODO: how can I not clone this here?
+    let raw = md_file.raw.clone();
+    let mut options = Options::empty();
+    options.insert(Options::ENABLE_STRIKETHROUGH);
+    options.insert(Options::ENABLE_FOOTNOTES);
+    let mut parser = Parser::new_ext(&raw, options);
+
     // -- parser stuff
 
     // TODO: I don't know how to abstract this into another function with correct lifetimes.
@@ -21,8 +28,8 @@ pub fn new(parser: Parser, md_file: &mut MdFile, site: &mut Site) -> String {
     let parser = parser.map(|event| -> Event {
         match event {
             Event::Start(tag) => match tag {
-                Tag::Link(link_type, ref url, ref title) => {
-                    link.update_vals(
+                Tag::Link(_link_type, ref _url, ref _title) => {
+                    link.fill_from_parser(
                         tag,
                         site,
                         Some(md_file.full_url.clone()),

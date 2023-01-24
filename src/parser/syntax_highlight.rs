@@ -7,7 +7,7 @@ use slugify::slugify;
 use syntect::dumps::from_binary;
 use syntect::parsing::SyntaxReference;
 use syntect::{
-    dumps, highlighting::ThemeSet, html, html::ClassStyle, html::ClassedHTMLGenerator,
+    dumps, highlighting::ThemeSet, html::ClassStyle, html::ClassedHTMLGenerator,
     parsing::SyntaxSet, util::LinesWithEndings,
 };
 
@@ -109,7 +109,7 @@ fn push_code_highlight<S: AsRef<str>>(s: &mut String, lang: Option<S>, code: &st
                 s.push_str("</code>");
             }
 
-            Err(err) => {
+            Err(_err) => {
                 panic!();
             }
         }
@@ -166,7 +166,6 @@ impl<'a> HighlightSpec<'a> {
 
 
 // Syntect stuff
-
 pub fn dump_syntax_binary() {
     let file = "syntaxes/syntax_set.packdump";
     println!("Dumping syntax binary to {}", file);

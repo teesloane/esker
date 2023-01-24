@@ -18,7 +18,7 @@ impl<'a, I: Iterator<Item = Event<'a>>> Iterator for ParseHeadlines<'a, I> {
 
     /// replace headlines with html headlines, such that they are given id's based on their child text.
     fn next(&mut self) -> Option<Self::Item> {
-        let (heading_level, id_fragment, c) = match self.parent.next()? {
+        let (heading_level, id_fragment, _c) = match self.parent.next()? {
             Event::Start(pulldown_cmark::Tag::Heading(heading_level, id_fragment, c)) => {
                 (heading_level, id_fragment, c)
             }
@@ -41,7 +41,7 @@ impl<'a, I: Iterator<Item = Event<'a>>> Iterator for ParseHeadlines<'a, I> {
 
         let id = match id_fragment {
             Some(id) => id.to_string(),
-            None => slugify!(&generated_id).to_string(),
+            None => slugify!(&generated_id)
         };
 
         let mut inner_html = String::new();

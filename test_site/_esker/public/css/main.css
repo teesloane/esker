@@ -25,8 +25,6 @@
 body {
   color: var(--color);
   background-color: var(--bg);
-  color: blue;
-
   max-width: 48em;
   margin: 0 auto;
   display: flex;
