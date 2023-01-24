@@ -33,21 +33,22 @@ pub struct Site {
     /// files that have invalid frontmatter:
     invalid_files: Vec<PathBuf>,
     /// esker directory that gets generated in the vault: _esker
+    ///
     pub dir_esker: PathBuf,
     /// esker directory for templates
     pub dir_esker_templates: PathBuf,
     /// out_path: _esker/_site
-    pub dir_esker_build: PathBuf,
+    pub dir_esker_site: PathBuf,
     /// <cwd>/<my_attachment_directory>. Might not exist (if user doesn't put it in config.)
     pub dir_attachments: Option<PathBuf>,
     /// _esker/public
     dir_esker_public: PathBuf,
     /// _esker/<my_attachment_folder_name>
-    dir_esker_build_attachments: Option<PathBuf>,
+    dir_esker_site_attachments: Option<PathBuf>,
     /// where public will go in _site.
-    dir_esker_build_public: PathBuf,
+    dir_esker_site_public: PathBuf,
     /// _esker/_site/<tag_url>/*tag_files.html
-    pub dir_esker_build_tags: Option<PathBuf>,
+    pub dir_esker_site_tags: Option<PathBuf>,
     ///errorz
     pub errors: Errors,
     /// templating enginge
@@ -100,13 +101,13 @@ impl Site {
             markdown_files: HashMap::new(),
             invalid_files: Vec::new(),
             dir_esker_templates: esker_dir_templates.clone(),
-            dir_esker_build,
+            dir_esker_site: dir_esker_build,
             dir_attachments,
             dir_esker_public: esker_dir.join("public"),
-            dir_esker_build_attachments,
-            dir_esker_build_public: esker_dir.join("_site/public"),
+            dir_esker_site_attachments: dir_esker_build_attachments,
+            dir_esker_site_public: esker_dir.join("_site/public"),
             dir_esker: esker_dir,
-            dir_esker_build_tags: dir_esker_tags,
+            dir_esker_site_tags: dir_esker_tags,
             errors: Errors::new(),
             tera: crate::templates::load_templates(&esker_dir_templates),
             config: user_config,
@@ -130,7 +131,8 @@ impl Site {
     }
 
     fn rebuild(&mut self) {
-        fs::remove_dir_all(&self.dir_esker_build).expect("failed to delete _site");
+        fs::remove_dir_all(&self.dir_esker_site).expect("failed to delete _site");
+        self.errors.clear();
 
         self.config = Config::new(&self.dir, &self.cli_command);
         self.tera = crate::templates::load_templates(&self.dir_esker_templates);
@@ -144,6 +146,7 @@ impl Site {
 
 
     fn rebuild_markdown(&mut self) {
+        self.errors.clear();
         self.markdown_files.clear();
         self.markdown_files_paths.clear();
         self.invalid_files.clear();
@@ -158,7 +161,7 @@ impl Site {
     fn create_required_directories_for_build(&self) {
         create_dir_all(self.dir_esker.clone()).unwrap();
         create_dir_all(self.dir_esker_public.clone()).unwrap();
-        create_dir_all(self.dir_esker_build_public.clone()).unwrap();
+        create_dir_all(self.dir_esker_site_public.clone()).unwrap();
 
         if let Some(attachment_dir) = &self.config.attachment_directory {
             let dir_attachments_build = self.dir_esker.join(attachment_dir);
@@ -167,13 +170,13 @@ impl Site {
     }
 
     pub fn cp_public(&mut self) {
-        fs::remove_dir_all(&self.dir_esker_build_public).unwrap();
-        create_dir_all(self.dir_esker_build_public.clone()).unwrap();
+        fs::remove_dir_all(&self.dir_esker_site_public).unwrap();
+        create_dir_all(self.dir_esker_site_public.clone()).unwrap();
         Command::new("cp")
             .arg("-n")
             .arg("-r")
             .arg(self.dir_esker_public.display().to_string())
-            .arg(self.dir_esker_build.display().to_string())
+            .arg(self.dir_esker_site.display().to_string())
             .output()
             .expect("Internal error: failed to copy data directory to _site.");
     }
@@ -181,7 +184,7 @@ impl Site {
     /// For now we shell out to cp on unix because I don't want to figure this out in rust.
     /// copies data and public folder to their respective destinations
     pub fn cp_data(&mut self) {
-        if let Some(dir_attachment_site) = &self.dir_esker_build_attachments {
+        if let Some(dir_attachment_site) = &self.dir_esker_site_attachments {
             if Path::new(dir_attachment_site).is_dir() {
                 fs::remove_dir_all(dir_attachment_site).unwrap();
             }
@@ -192,7 +195,7 @@ impl Site {
                 .arg("-n")
                 .arg("-r")
                 .arg(attachment_dir.display().to_string())
-                .arg(self.dir_esker_build.display().to_string())
+                .arg(self.dir_esker_site.display().to_string())
                 .output()
                 .expect("Internal error: failed to copy data directory to _site.");
         }
@@ -203,7 +206,7 @@ impl Site {
     /// this allows users to generate an html page per tag, that can
     /// link to each page that is thusly tagged.
     fn build_tag_pages(&self) {
-        if let Some(dir_tags) = &self.dir_esker_build_tags {
+        if let Some(dir_tags) = &self.dir_esker_site_tags {
             fs::create_dir_all(dir_tags).expect("failed to create tags directory");
 
             for (tag_name, vec_of_tagged_items) in &self.tags {
@@ -243,7 +246,7 @@ impl Site {
         ctx.insert("pages", &all_pages);
 
         let rendered_template = self.tera.render("feed.rss", &ctx).unwrap();
-        let out_path = self.dir_esker_build.join("feed.rss");
+        let out_path = self.dir_esker_site.join("feed.rss");
         fs::write(out_path, rendered_template).unwrap();
     }
 
@@ -422,7 +425,7 @@ impl Site {
             files.insert(String::from("templates/base.html"), new_site::BASE_HTML);
             files.insert(
                 String::from("templates/default.html"),
-                new_site::DEFAULT_HTML,
+                new_site::SINGLE_HTML,
             );
             files.insert(String::from("templates/tags.html"), new_site::TAGS_HTML);
             files.insert(String::from("templates/list.html"), new_site::LIST_HTML);

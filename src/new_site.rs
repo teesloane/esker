@@ -108,7 +108,7 @@ pub const BASE_HTML: &str = r#"<html>
 
 "#;
 
-pub const DEFAULT_HTML: &str = r#"{% extends "base.html" %}
+pub const SINGLE_HTML: &str = r#"{% extends "base.html" %}
 {% block title %} {{page.title}} {% endblock title %}
 "#;
 
@@ -284,7 +284,7 @@ pub fn init(dir: Option<PathBuf>) {
         files.insert(String::from("public/js/main.js"), DEFAULT_JS);
         files.insert(String::from("public/css/main.css"), DEFAULT_CSS);
         files.insert(String::from("templates/base.html"), BASE_HTML);
-        files.insert(String::from("templates/default.html"), DEFAULT_HTML);
+        files.insert(String::from("templates/single.html"), SINGLE_HTML);
         files.insert(String::from("templates/tags.html"), TAGS_HTML);
         files.insert(String::from("templates/list.html"), LIST_HTML);
         files.insert(String::from("templates/feed.rss"), RSS_XML);

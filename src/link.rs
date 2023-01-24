@@ -47,9 +47,6 @@ pub struct Link {
 }
 
 
-// TODO: this could probably be grouped in a file with the parser for better organizations.
-// Or, just moved into md_file
-
 // NOTE: find a way to extract update link and update_img_link into one
 // function. FUTURE ME TIP: I tried just passing the "tag" (Tag::Image/Link) and
 // then matching on that. It worked almost perfectly except that I ran into
@@ -79,7 +76,7 @@ impl Link {
         }
     }
 
-    pub fn update_vals(
+    pub fn fill_from_parser(
         &mut self,
         tag: Tag,
         site: &Site,

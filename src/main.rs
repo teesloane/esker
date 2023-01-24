@@ -77,7 +77,7 @@ async fn main() {
 async fn watch(dir: Option<PathBuf>, cmd: Commands) {
     let mut site = Site::new(dir, cmd.clone());
     site.build();
-    let output_directory = site.dir_esker_build.clone();
+    let output_directory = site.dir_esker_site.clone();
 
     tokio::task::spawn_blocking(move || {
         let mut hotwatch =

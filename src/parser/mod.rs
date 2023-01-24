@@ -22,7 +22,7 @@ pub fn new(parser: Parser, md_file: &mut MdFile, site: &mut Site) -> String {
         match event {
             Event::Start(tag) => match tag {
                 Tag::Link(link_type, ref url, ref title) => {
-                    link.update_vals(
+                    link.fill_from_parser(
                         tag,
                         site,
                         Some(md_file.full_url.clone()),

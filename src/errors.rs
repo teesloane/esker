@@ -47,4 +47,9 @@ impl Errors {
     pub fn has_errors(&self) -> bool {
         return !(self.invalid_date_updated.is_empty() && self.invalid_date_updated.is_empty());
     }
+
+    pub fn clear(&mut self) {
+        self.invalid_date_created.clear();
+        self.invalid_date_updated.clear();
+    }
 }

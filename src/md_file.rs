@@ -49,7 +49,7 @@ impl MdFile {
             .into_os_string()
             .into_string()
             .unwrap();
-        let out_path = PathBuf::from(&site.dir_esker_build)
+        let out_path = PathBuf::from(&site.dir_esker_site)
             .join(web_path_parents.join(PathBuf::from(&web_path_stem)));
 
         // now let's make the full url.

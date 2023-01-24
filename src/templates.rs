@@ -26,12 +26,11 @@ pub fn load_templates(dir_templates: &Path) -> Tera {
     tera
 }
 
-// get_template
-// Returns the name of a template (to later render), provided it's found
-// in the tera instance.
+// get_template returns the name of a template (to later render), provided it's
+// found in the tera instance.
 pub fn get_name(tera: &Tera, template: &str) -> String {
     let template_with_html = format!("{}.html", &template);
-    let default_template_name = "default.html".to_string();
+    let default_template_name = "single.html".to_string();
     if tera.get_template_names().any(|x| x == template_with_html) {
         return template_with_html;
     } else {
