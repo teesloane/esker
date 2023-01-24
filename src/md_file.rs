@@ -120,7 +120,7 @@ impl MdFile {
     }
 
     /// enables creating "post list" type pages where the "section" context
-    /// corresponds to every file in the dir
+    /// corresponds to every file in the dir. Only runs for files named _index.md in a dir.
     pub fn write_section_html(
         &mut self,
         site: &Site,
@@ -156,17 +156,7 @@ impl MdFile {
     /// writes a file to it's specified output path.
     pub fn write_html(&mut self, site: &mut Site) {
         self.get_related_files(&site);
-        let rendered_template = self.render_with_tera(site);
-        let prefix = &self.out_path.parent().unwrap();
-        fs::create_dir_all(prefix).unwrap();
-        let mut file = fs::File::create(&self.out_path).expect("couldn't create file");
-        fs::write(&self.out_path, rendered_template).expect("Unable to write file");
-    }
 
-    /// sets up the tera context, and renders the file with
-    /// TODO: move this into write_html.
-    /// TODO: rename this.
-    fn render_with_tera(&self, site: &mut Site) -> String {
         let mut ctx = Context::new();
         ctx.insert("page", &templates::Page::new(self));
         ctx.insert("baseurl", &site.config.url.clone());
@@ -175,7 +165,12 @@ impl MdFile {
         ctx.insert("sitemap", &site.template_sitemap);
         let template_name = templates::get_name(&site.tera, &self.frontmatter.template);
         let rendered_template = site.tera.render(&template_name, &ctx).unwrap();
-        return rendered_template;
+
+
+        let prefix = &self.out_path.parent().unwrap();
+        fs::create_dir_all(prefix).unwrap();
+        let mut file = fs::File::create(&self.out_path).expect("couldn't create file");
+        fs::write(&self.out_path, rendered_template).expect("Unable to write file");
     }
 
     pub fn get_backlinks_for_file(&mut self, site: &Site) {
