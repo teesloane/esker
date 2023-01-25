@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
+use std::path::{PathBuf, Path};
 
 use crate::Commands;
 
@@ -17,7 +17,7 @@ pub struct Config {
 
 impl Config {
     /// Load the config from a yaml file and get return the Config struct.
-    pub fn new(cwd: &PathBuf, cmd: &Commands) -> Config {
+    pub fn new(cwd: &Path, cmd: &Commands) -> Config {
         let config_file = cwd.join("_esker/config.yaml");
         let user_config_str = std::fs::read_to_string(&config_file).expect("Failed to load user config.yaml");
         let mut user_config: Config = serde_yaml::from_str(&user_config_str).expect("Invalid yaml found in config.yaml");
@@ -28,6 +28,6 @@ impl Config {
             return user_config;
         }
 
-        return user_config;
+        user_config
     }
 }

@@ -42,12 +42,12 @@ impl MdFile {
         let filename = path.file_stem().unwrap().to_str().unwrap().to_string();
         let mut out_file_path_slugified = slugify!(&filename);
         // takes slugified file name and adds html extension
-        let web_path_stem = PathBuf::from(out_file_path_slugified.clone()).with_extension("html");
+        let web_path_stem = PathBuf::from(out_file_path_slugified).with_extension("html");
         let out_path = PathBuf::from(&site.dir_esker_site)
             .join(web_path_parents.join(PathBuf::from(&web_path_stem)));
 
         // now let's make the full url.
-        let url_path = PathBuf::from(web_path_parents.clone())
+        let url_path = web_path_parents
             .join(web_path_stem.clone())
             .into_os_string()
             .into_string()
@@ -64,7 +64,7 @@ impl MdFile {
             out_path,
             frontmatter: fm,
             full_url,
-            is_section: if filename == "_index" { true } else { false },
+            is_section: filename == "_index",
             backlinks: Vec::new(),
             toc: Vec::new(),
             related_files: Vec::new(),
@@ -73,7 +73,8 @@ impl MdFile {
         md_file
             .set_raw_contents()
             .expect("Failed to set raw contents for file");
-        return md_file;
+
+        md_file
     }
 
     /// collect links, tags, etc so that they are available the next pass when we render.
@@ -87,7 +88,7 @@ impl MdFile {
         for tag in &self.frontmatter.tags {
             if let Some(tags) = site.tags.get(tag) {
                 for tag_link in tags {
-                    if tag_link.url != self.full_url && !related_files.contains(&tag_link) {
+                    if tag_link.url != self.full_url && !related_files.contains(tag_link) {
                         related_files.push(tag_link.clone());
                     }
                 }
@@ -107,10 +108,10 @@ impl MdFile {
             let serialized_pages: Vec<_> = section_content
                 .iter()
                 .filter(|md_file| !md_file.is_section)
-                .map(|md_file| templates::Page::new(md_file))
+                .map(templates::Page::new)
                 .collect();
 
-            self.get_related_files(&site);
+            self.get_related_files(site);
             let mut ctx = Context::new();
             ctx.insert("page", &templates::Page::new(self));
             ctx.insert("pages", &serialized_pages);
@@ -131,7 +132,7 @@ impl MdFile {
 
     /// writes a file to it's specified output path.
     pub fn write_html(&mut self, site: &mut Site) {
-        self.get_related_files(&site);
+        self.get_related_files(site);
 
         let mut ctx = Context::new();
         ctx.insert("page", &templates::Page::new(self));
@@ -151,10 +152,9 @@ impl MdFile {
         let mut out: Vec<Link> = Vec::new();
         for g_link in &site.links.internal {
             if let Some(originating_file_url) = &g_link.originating_file_url {
-                if g_link.url == self.full_url && self.full_url != originating_file_url.clone() {
-                    if !out.contains(&g_link) {
-                        out.push(g_link.clone());
-                    }
+
+                if g_link.url == self.full_url && self.full_url != originating_file_url.clone() && !out.contains(g_link) {
+                    out.push(g_link.clone());
                 }
             }
         }
@@ -171,14 +171,14 @@ impl MdFile {
         for (_i, line) in reader.lines().enumerate() {
             // Write the line to the output file
             let line = line?;
-            if line == "---" && in_frontmatter == false {
+            if line == "---" && !in_frontmatter {
                 in_frontmatter = true
-            } else if line == "---" && in_frontmatter == true {
+            } else if line == "---" && in_frontmatter {
                 in_frontmatter = false;
                 continue;
             }
 
-            if in_frontmatter == false {
+            if !in_frontmatter {
                 output.push(line)
             }
         }

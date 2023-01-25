@@ -6,7 +6,7 @@ use std::io::{self, BufRead};
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-pub fn load_files(cwd: &PathBuf, pattern: &str) -> Vec<PathBuf> {
+pub fn load_files(cwd: &Path, pattern: &str) -> Vec<PathBuf> {
     let pattern_path = cwd.join(pattern);
     let pattern_path_str = pattern_path.to_str().unwrap();
 
@@ -15,7 +15,7 @@ pub fn load_files(cwd: &PathBuf, pattern: &str) -> Vec<PathBuf> {
 
 // steal code: https://stackoverflow.com/a/64148190
 pub fn iso8601(st: std::time::SystemTime) -> String {
-    let dt: DateTime<Local> = st.clone().into();
+    let dt: DateTime<Local> = st.into();
     format!("{}", dt.format("%F"))
 }
 
@@ -28,8 +28,7 @@ where
 }
 
 pub fn get_time_in_ms(s: SystemTime) -> std::time::Duration {
-    let since_the_epoch = s.duration_since(UNIX_EPOCH).expect("Time went backwards");
-    since_the_epoch
+    s.duration_since(UNIX_EPOCH).expect("Time went backwards")
 }
 
 pub fn exit() -> ! {
@@ -47,6 +46,6 @@ pub fn naive_date_to_str(ndt: NaiveDateTime) -> String {
 // when provided the current directory esker is run in (ex: /Users/my_site/test-site)
 // turns p: "/Users/tees/development/tees/esker/test_site/posts/first_post.md",
 // into: -> posts
-pub fn strip_pwd(pwd: &PathBuf, p: &PathBuf) -> PathBuf {
+pub fn strip_pwd(pwd: &Path, p: &Path) -> PathBuf {
     p.strip_prefix(pwd).unwrap().parent().unwrap().to_path_buf()
 }

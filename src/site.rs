@@ -73,7 +73,7 @@ impl Site {
             cwd = env::current_dir().unwrap();
         }
 
-        let esker_dir = cwd.clone().join("_esker");
+        let esker_dir = cwd.join("_esker");
         let dir_esker_build = esker_dir.join("_site");
         let esker_dir_templates = esker_dir.join("templates");
         let user_config = Config::new(&cwd, &cmd);
@@ -90,12 +90,12 @@ impl Site {
         let mut dir_attachments = None;
         let mut dir_esker_build_attachments = None;
         if let Some(attachment_dir) = &user_config.attachment_directory {
-            dir_attachments = Some(cwd.clone().join(attachment_dir));
+            dir_attachments = Some(cwd.join(attachment_dir));
             dir_esker_build_attachments = Some(dir_esker_build.join(attachment_dir));
         }
 
-        let mut site = Site {
-            dir: cwd.clone(),
+        Site {
+            dir: cwd,
             markdown_files_paths: Vec::new(),
             markdown_files: HashMap::new(),
             invalid_files: Vec::new(),
@@ -114,10 +114,8 @@ impl Site {
             tags: HashMap::new(),
             template_sitemap: Vec::new(),
             cli,
-            cli_command: cmd.clone(),
-        };
-
-        return site;
+            cli_command: cmd
+        }
     }
 
     pub fn build(&mut self) {
@@ -212,8 +210,8 @@ impl Site {
         if let Some(dir_tags) = &self.dir_esker_site_tags {
             fs::create_dir_all(dir_tags).expect("failed to create tags directory");
 
-            for (tag_name, _vec_of_tagged_items) in &self.tags {
-                if tag_name != "" {
+            for tag_name in self.tags.keys() {
+                if !tag_name.is_empty() {
                     let mut ctx = tera::Context::new();
                     ctx.insert("baseurl", &self.config.url.clone());
                     ctx.insert("tags", &self.tags);
@@ -234,7 +232,7 @@ impl Site {
     fn build_syndication_pages(&mut self) {
         let mut all_pages: Vec<Page> = Vec::new();
 
-        for (_k, md_files) in &self.markdown_files {
+        for md_files in self.markdown_files.values() {
             for md_file in md_files {
                 let page = Page::new(md_file);
                 all_pages.push(page);
@@ -284,7 +282,7 @@ impl Site {
                     }
                 }
             } else {
-                invalid_files.push(f.to_path_buf().clone());
+                invalid_files.push(f.to_path_buf());
             }
         });
 
@@ -292,7 +290,7 @@ impl Site {
         let markdown_files_clone = markdown_files.clone();
 
         // Loop #2 - Let's render it!
-        for (_path, vec_md_files) in &mut markdown_files {
+        for vec_md_files in markdown_files.values_mut() {
             for f in vec_md_files {
                 if f.frontmatter.publish {
                     if f.is_section {
@@ -315,7 +313,7 @@ impl Site {
 
     fn collect_tags_from_frontmatter(&mut self, md_file: &MdFile) {
         for tag in &md_file.frontmatter.tags {
-            let new_tag_link = Link::new_tag_link_from_md_file(&md_file);
+            let new_tag_link = Link::new_tag_link_from_md_file(md_file);
 
             if let Some(list_of_links_for_tag) = self.tags.get_mut(tag) {
                 list_of_links_for_tag.push(new_tag_link)
@@ -326,7 +324,7 @@ impl Site {
     }
 
     pub fn build_with_baseurl(&self, web_path: String) -> String {
-        return format!("{}/{}", self.config.url, web_path);
+        format!("{}/{}", self.config.url, web_path)
     }
 
     // used to add links to the internal global links list.

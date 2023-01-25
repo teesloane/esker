@@ -41,7 +41,7 @@ impl<'a, I: Iterator<Item = Event<'a>>> Iterator for ParseHeadlines<'a, I> {
 
         let id = match id_fragment {
             Some(id) => id.to_string(),
-            None => slugify!(&generated_id).to_string(),
+            None => slugify!(&generated_id)
         };
 
         let mut inner_html = String::new();

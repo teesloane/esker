@@ -85,13 +85,13 @@ impl Link {
     ) {
         match tag {
             Tag::Link(_link_type, url, title) => {
-                let mut url_str = Self::slugify_internal_url(url.to_string().clone());
+                let mut url_str = Self::slugify_internal_url(url.to_string());
                 if Self::is_internal(&url) {
                     let url_as_path = PathBuf::from(&url_str).with_extension("html");
                     url_str = format!("{}", url_as_path.display());
 
                     let mut new_link_url: CowStr;
-                    if Self::is_mailto(&url.to_string().clone()) {
+                    if Self::is_mailto(&url) {
                         new_link_url = url
                     } else {
                         new_link_url = site.build_with_baseurl(url_str).into();
@@ -127,13 +127,13 @@ impl Link {
     pub fn for_parser<'a>(&self, site: &mut Site) -> Tag<'a> {
         let new_link_url: CowStr = self.url.clone().into();
         let title: CowStr = site.build_with_baseurl(self.url.clone()).into();
-        return Tag::Link(LinkType::Inline, new_link_url, title);
+        Tag::Link(LinkType::Inline, new_link_url, title)
     }
 
     // split a url: "projects/my_folder/a file"
     // get the last and slug it and rebuild the url.
     fn slugify_internal_url(url: String) -> String {
-        let chunks: Vec<_> = url.split("/").collect();
+        let chunks: Vec<_> = url.split('/').collect();
         let slug_chunks: Vec<String> = chunks
             .iter()
             .map(|s| {
@@ -142,11 +142,10 @@ impl Link {
 
                 // replace all `%20` with `-`
                 let new_str = url_as_string.replace("%20", "-");
-                return slugify!(&new_str);
+                slugify!(&new_str)
             })
             .collect();
-        let rebuild_url = slug_chunks.join("/");
-        return rebuild_url;
+        slug_chunks.join("/")
     }
 
     pub fn update_img_link<'a>(
@@ -160,27 +159,27 @@ impl Link {
             let url_as_path = PathBuf::from(&url_str);
             url_str = format!("{}", url_as_path.display());
             let new_link_url: CowStr = site.build_with_baseurl(url_str).into();
-            return Tag::Image(link_type, new_link_url, title);
+            Tag::Image(link_type, new_link_url, title)
         } else {
-            return Tag::Image(link_type, url, title);
+            Tag::Image(link_type, url, title)
         }
     }
 
     pub fn is_internal(url: &str) -> bool {
-        return !(Self::is_external(url));
+        !(Self::is_external(url))
     }
 
     pub fn is_mailto(url: &str) -> bool {
-        return url.starts_with("mailto:");
+        url.starts_with("mailto:")
     }
 
     pub fn is_external(url: &str) -> bool {
-        return url.starts_with("http://")
+        url.starts_with("http://")
             || url.starts_with("https://")
-            || url.starts_with("www.");
+            || url.starts_with("www.")
     }
 
     pub fn is_attachment() -> bool {
-        return false;
+        false
     }
 }

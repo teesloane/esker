@@ -30,7 +30,7 @@ impl Errors {
             println!("Pass a {} flag to print additional information", "-v".yellow().on_black());
         }
 
-        if self.invalid_date_created.len() > 0 {
+        if !self.invalid_date_created.is_empty() {
             println!(
                 "\n{} files did not have correct {} frontmatter\ndate_created should look like: {}",
                 self.invalid_date_created.len(),
@@ -43,7 +43,7 @@ impl Errors {
             }
         }
 
-        if self.invalid_date_updated.len() > 0 {
+        if !self.invalid_date_updated.is_empty() {
             println!(
                 "\n{} files did not have correct {} frontmatter\ndate_updated should look like: {}",
                 self.invalid_date_updated.len(),
@@ -58,7 +58,7 @@ impl Errors {
     }
 
     pub fn has_errors(&self) -> bool {
-        return !(self.invalid_date_updated.is_empty() && self.invalid_date_updated.is_empty());
+        !(self.invalid_date_updated.is_empty() && self.invalid_date_updated.is_empty())
     }
 
     pub fn clear(&mut self) {
