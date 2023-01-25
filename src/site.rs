@@ -9,7 +9,7 @@ use syntect::html;
 
 use crate::parser::syntax_highlight::THEMES;
 use crate::templates::{self, Page};
-use crate::Commands;
+use crate::{Commands, Cli};
 // use crate::link::SiteLinks;
 use crate::{config::Config, util};
 use crate::{
@@ -60,12 +60,14 @@ pub struct Site {
     pub template_sitemap: Vec<Link>,
     /// Which command was run (build, watch, etc.)
     pub cli_command: Commands,
+    /// the clap cli struct.
+    pub cli: Cli
 }
 
 impl Site {
     pub fn new(cmd: crate::Commands, cli: crate::Cli) -> Self {
         let cwd: PathBuf;
-        if let Some(dir) = cli.dir {
+        if let Some(dir) = cli.dir.clone() {
             cwd = dir;
         } else {
             cwd = env::current_dir().unwrap();
@@ -111,6 +113,7 @@ impl Site {
             links: SiteLinks::new(),
             tags: HashMap::new(),
             template_sitemap: Vec::new(),
+            cli,
             cli_command: cmd.clone(),
         };
 
@@ -125,6 +128,10 @@ impl Site {
         self.cp_data();
         self.cp_public();
         self.build_syndication_pages();
+
+        if self.errors.has_errors() {
+            self.errors.report_errors(self.cli.verbose);
+        }
     }
 
     fn rebuild(&mut self) {
@@ -304,9 +311,6 @@ impl Site {
         self.markdown_files = markdown_files;
         self.invalid_files = invalid_files;
 
-        if self.errors.has_errors() {
-            self.errors.report_errors();
-        }
     }
 
     fn collect_tags_from_frontmatter(&mut self, md_file: &MdFile) {

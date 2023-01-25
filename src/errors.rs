@@ -1,5 +1,7 @@
 use colored::*;
 
+use crate::site::Site;
+
 #[derive(Debug)]
 pub struct Errors {
     invalid_date_created: Vec<String>,
@@ -22,16 +24,23 @@ impl Errors {
         self.invalid_date_updated.push(filepath_str);
     }
 
-    pub fn report_errors(&self) {
-        println!("\n⚠️  Errors and Warnings\n",);
+    pub fn report_errors(&self, verbose: bool) {
+        println!("\n⚠️  Errors and Warnings",);
+        if !verbose {
+            println!("Pass a {} flag to print additional information", "-v".yellow().on_black());
+        }
 
         if self.invalid_date_created.len() > 0 {
             println!(
-                "{} files did not have correct {} frontmatter\ndate_created should look like: {}",
+                "\n{} files did not have correct {} frontmatter\ndate_created should look like: {}",
                 self.invalid_date_created.len(),
                 "date_created".to_string().yellow().on_black(),
                 "YYYY-MM-DD HH:MM".to_string().green().on_black()
             );
+
+            if verbose {
+                println!("\nThe following files have invalid date_created frontmatter\n{:#?}", self.invalid_date_created);
+            }
         }
 
         if self.invalid_date_updated.len() > 0 {
@@ -41,6 +50,10 @@ impl Errors {
                 "date_updated".to_string().yellow().on_black(),
                 "YYYY-MM-DD HH:MM".to_string().green().on_black()
             );
+
+            if verbose {
+                println!("\nThe following files have invalid date_updated frontmatter\n{:#?}", self.invalid_date_updated);
+            }
         }
     }
 
