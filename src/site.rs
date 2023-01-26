@@ -9,7 +9,7 @@ use syntect::html;
 
 use crate::parser::syntax_highlight::THEMES;
 use crate::templates::{self, Page};
-use crate::{Commands, Cli};
+use crate::{Cli, Commands};
 // use crate::link::SiteLinks;
 use crate::{config::Config, util};
 use crate::{
@@ -61,7 +61,7 @@ pub struct Site {
     /// Which command was run (build, watch, etc.)
     pub cli_command: Commands,
     /// the clap cli struct.
-    pub cli: Cli
+    pub cli: Cli,
 }
 
 impl Site {
@@ -75,7 +75,6 @@ impl Site {
 
         let esker_dir = cwd.join("_esker");
         let dir_esker_build = esker_dir.join("_site");
-        let esker_dir_templates = esker_dir.join("templates");
         let user_config = Config::new(&cwd, &cmd);
 
         let mut dir_esker_tags: Option<PathBuf>;
@@ -94,27 +93,62 @@ impl Site {
             dir_esker_build_attachments = Some(dir_esker_build.join(attachment_dir));
         }
 
+        let (dir_esker_templates, dir_esker_public) =
+            Site::get_possible_theme_paths(&user_config, &esker_dir);
+
         Site {
             dir: cwd,
             markdown_files_paths: Vec::new(),
             markdown_files: HashMap::new(),
             invalid_files: Vec::new(),
-            dir_esker_templates: esker_dir_templates.clone(),
+            dir_esker_templates: dir_esker_templates.clone(),
             dir_esker_site: dir_esker_build,
             dir_attachments,
-            dir_esker_public: esker_dir.join("public"),
+            dir_esker_public,
             dir_esker_site_attachments: dir_esker_build_attachments,
             dir_esker_site_public: esker_dir.join("_site/public"),
             dir_esker: esker_dir,
             dir_esker_site_tags: dir_esker_tags,
             errors: Errors::new(),
-            tera: crate::templates::load_templates(&esker_dir_templates),
+            tera: crate::templates::load_templates(&dir_esker_templates),
             config: user_config,
             links: SiteLinks::new(),
             tags: HashMap::new(),
             template_sitemap: Vec::new(),
             cli,
-            cli_command: cmd
+            cli_command: cmd,
+        }
+    }
+
+    fn get_possible_theme_paths(cfg: &Config, dir_esker: &Path) -> (PathBuf, PathBuf) {
+        let templates = dir_esker.join("templates");
+        let public = dir_esker.join("public");
+
+        if let Some(theme) = &cfg.theme {
+            let theme_folder = dir_esker.join(Path::new("themes")).join(theme);
+            let theme_public = theme_folder.join("public");
+            let theme_templates = theme_folder.join("templates");
+
+            if !theme_folder.is_dir() {
+                println!(
+                    "The theme: '{}' does not exist in your _esker folder",
+                    theme
+                );
+                util::exit()
+            }
+
+            if theme_public.is_dir() && theme_templates.is_dir() {
+                return (theme_templates, theme_public);
+            } else {
+                println!(
+                    "Please ensure that theme '{}' has a 'public' and 'templates' directory",
+                    theme
+                );
+                util::exit()
+            }
+            // is the theme valid? -> check if there /templates and /public
+        } else {
+            return (templates, public);
         }
     }
 
@@ -135,8 +169,7 @@ impl Site {
     fn rebuild(&mut self) {
         fs::remove_dir_all(&self.dir_esker_site).expect("failed to delete _site");
         self.errors.clear();
-
-        self.config = Config::new(&self.dir, &self.cli_command);
+        self.rebuild_config();
         self.tera = crate::templates::load_templates(&self.dir_esker_templates);
         self.markdown_files.clear();
         self.markdown_files_paths.clear();
@@ -144,6 +177,14 @@ impl Site {
         self.tags.clear();
         self.template_sitemap.clear();
         self.build();
+    }
+
+    fn rebuild_config(&mut self) {
+        self.config = Config::new(&self.dir, &self.cli_command);
+        let (dir_esker_templates, dir_esker_public) =
+            Site::get_possible_theme_paths(&self.config, &self.dir_esker);
+        self.dir_esker_templates = dir_esker_templates;
+        self.dir_esker_public = dir_esker_public;
     }
 
     fn rebuild_markdown(&mut self) {
@@ -308,7 +349,6 @@ impl Site {
         self.markdown_files_paths = markdown_files_paths;
         self.markdown_files = markdown_files;
         self.invalid_files = invalid_files;
-
     }
 
     fn collect_tags_from_frontmatter(&mut self, md_file: &MdFile) {
@@ -442,45 +482,41 @@ impl Site {
     }
 
     pub fn handle_watch_event(&mut self, event: Event) {
-        match event {
-            Event::Write(path) | Event::Create(path) | Event::Remove(path) => {
-                // NOTE: this removes the last element if it's a file and removes
-                // all prefixing path parents from the current working directory.
-                let stripped_path = util::strip_pwd(&self.dir, &path);
+        if let Event::Write(path) | Event::Create(path) | Event::Remove(path) = event {
+            // NOTE: this removes the last element if it's a file and removes
+            // all prefixing path parents from the current working directory.
+            let stripped_path = util::strip_pwd(&self.dir, &path);
 
-                if let Some(ext) = path.extension() {
-                    if ext == "md" {
-                        self.rebuild_markdown();
-                    }
-                }
-
-                // handle public folder
-                if stripped_path.starts_with("_esker/public") {
-                    self.cp_public()
-                }
-
-                // handle templates and config file.
-                if stripped_path.starts_with("_esker/templates") {
-                    self.rebuild()
-                }
-
-                if let Some(filename) = path.file_name() {
-                    if filename == "config.yaml" {
-                        self.rebuild()
-                    }
-                }
-
-                if let Some(dir_attachments) = &self.dir_attachments {
-                    let mut dir_attachments = dir_attachments.clone();
-                    if let Some(dir_attachments_name) = dir_attachments.file_name() {
-                        if stripped_path.starts_with(dir_attachments_name) {
-                            self.cp_data();
-                        }
-                    }
+            if let Some(ext) = path.extension() {
+                if ext == "md" {
+                    self.rebuild_markdown();
                 }
             }
 
-            _ => (),
+            // handle public folder
+            if path.starts_with(&self.dir_esker_public) {
+                self.cp_public()
+            }
+
+            // handle templates and config file.
+            if path.starts_with(&self.dir_esker_templates) {
+                self.rebuild()
+            }
+
+            if let Some(filename) = path.file_name() {
+                if filename == "config.yaml" {
+                    self.rebuild()
+                }
+            }
+
+            if let Some(dir_attachments) = &self.dir_attachments {
+                let mut dir_attachments = dir_attachments.clone();
+                if let Some(dir_attachments_name) = dir_attachments.file_name() {
+                    if stripped_path.starts_with(dir_attachments_name) {
+                        self.cp_data();
+                    }
+                }
+            }
         }
     }
 }

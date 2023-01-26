@@ -23,5 +23,5 @@ test_site_build:
 
 test_site: test_site_remove test_site_new test_site_build
 
-test_site_watch: test_site_remove test_site_new
+test_site_watch:
 	cd test_site &&../target/debug/esker watch

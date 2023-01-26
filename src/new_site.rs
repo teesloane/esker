@@ -21,6 +21,13 @@ ignored_directories: ["dailies", "jots", "work", "media", "templates"]
 
 # the url you wish to use for grouping "tags" under
 tags_url: "tags"
+
+
+# Add the name of a theme if you are using
+# to use a theme, you must have it in your themes directory, for ex:
+# _esker/themes/<theme_name>
+
+# theme: "<my_theme_name>"
 "#;
 
 pub const BASE_HTML: &str = r#"<html>
