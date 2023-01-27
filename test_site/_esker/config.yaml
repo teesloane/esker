@@ -22,4 +22,4 @@ tags_url: "tags"
 # to use a theme, you must have it in your themes directory, for ex:
 # _esker/themes/<theme_name>
 
-# theme: "weakty"
+# theme: "<my_theme_name>"

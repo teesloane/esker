@@ -1,4 +1,5 @@
 ---
-title: my posts!
+title: Posts
 template: list
 ---
+

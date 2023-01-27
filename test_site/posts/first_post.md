@@ -5,6 +5,10 @@ date_created: 2022-01-12
 date_updated: 2022-01-12
 ---
 
+```js
+console.log("foo")
+```
+
 [next post](posts/second_post.md)
 
 Hi, I'm really excited to be here.

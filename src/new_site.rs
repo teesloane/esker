@@ -30,7 +30,7 @@ tags_url: "tags"
 # theme: "<my_theme_name>"
 "#;
 
-pub const BASE_HTML: &str = r#"<html>
+pub const BASE_HTML: &str = r##"<html>
   <head>
     <meta charset="utf-8">
     <title>My Site - {% block title %} {% endblock title %}</title>
@@ -45,49 +45,58 @@ pub const BASE_HTML: &str = r#"<html>
     </style>
   </head>
 
-  <body style="display: flex;">
-    <main style="display: flex;">
-      <div style="display: flex; flex-direction: column; flex: 1;">
+  <body class="flex">
+    <nav>
+      <div class="site-name">///// {{config.title}} </div>
+      <ul class="flex">
+        <li><a class="nav-link" href="#replace_me">Post</a></li>
+        <li><a class="nav-link" href="#replace_me">About</a></li>
+        <li><a class="nav-link" href="#replace_me">Feed</a></li>
+      </ul>
+    </nav>
+
+    <div class="flex">
+    <main class="flex">
+      <div class="flex-col flex-1">
         <article>
           {% if page.title %}
-          <h1> {{page.title}}</h1>
+            <h1 class="page-title"> {{page.title}}</h1>
           {% endif %}
           {% block content %} {{page.content}} {% endblock content %}
         </article>
-
-        {% if page.backlinks  %}
-        {% if page.backlinks | length > 0 %}
-        <h2> Backlinks </h2>
-        <ul>
-          {% for bl in page.backlinks %}
-          <li><a href="{{bl.originating_file_url}}">{{bl.originating_file_title}}</a></li>
-          {% endfor %}
-        </ul>
-        {% endif %}
-        {% endif %}
       </div>
 
-      <aside style="display: flex; flex-direction: column; margin-left: 64px;">
 
+    </main>
+
+      <aside class="sidebar">
         {% if page %}
-        <h3> TOC </h3>
-        <ul>
-          {% for link in page.toc %}
-          <li><a href="{{link.url}}">{{link.title}}</a></li>
-          {% endfor %}
-        </ul>
+          {% if page.toc | length > 0 %}
+          <h4> Contents </h4>
+          <ul style="list-style-type: none">
+            {% for link in page.toc %}
+            {% set hlvl = link.link_type.Toc.heading_level -%}
+            {% set indent_width = hlvl * 4 -%}
+            {% if hlvl == 1 or hlvl == 2 %}
+              <li><a  href="{{link.url}}">{{link.title}}</a></li>
+            {% else %}
+              <li style="margin-left: {{indent_width}}px"><a href="{{link.url}}">{{link.title}}</a></li>
+            {% endif %}
+            {% endfor %}
+          </ul>
+          {% endif %}
+
+        {% if page.backlinks | length > 0 %}
+          <h4> Backlinks </h4>
+          <ul>
+            {% for link in page.backlinks %}
+            <li><a href="{{link.url}}">{{link.title}}</a></li>
+            {% endfor %}
+          </ul>
         {% endif %}
 
-        <h3> Tags </h3>
-        <ul>
-          {% for tag, tagged_items in tags %}
-          <li><a href="{{baseurl}}/tags/{{tag}}.html">{{tag}} ({{tagged_items | length }})</a></li>
-          {% endfor %}
-        </ul>
-
-        {% if page %}
           {% if page.related_files | length > 0 %}
-          <h2>Similarly tagged</h2>
+          <h4>Similarly tagged</h2>
           <ul class="">
             {% for related_link in page.related_files %}
             <li><a href="{{related_link.url}}">{{related_link.title}}</a></li>
@@ -95,16 +104,8 @@ pub const BASE_HTML: &str = r#"<html>
           </ul>
           {% endif %}
         {% endif %}
-
-        <h3> Sitemap </h3>
-        <ul>
-          {% for link in sitemap %}
-          <li><a href="{{link.url}}">{{link.title}}</a></li>
-          {% endfor %}
-        </ul>
       </aside>
-
-    </main>
+    </div>
   </body>
   <script>
     window.x = {{__tera_context}};
@@ -112,8 +113,7 @@ pub const BASE_HTML: &str = r#"<html>
 
 </html>
 
-
-"#;
+"##;
 
 pub const SINGLE_HTML: &str = r#"{% extends "base.html" %}
 {% block title %} {{page.title}} {% endblock title %}
@@ -126,7 +126,7 @@ pub const LIST_HTML: &str = r#"{% extends "base.html" %}
   {{super()}}
   <ol reversed>
       {% for page in section.pages | sort(attribute="date_created_timestamp") %}
-        <li style="list-style-type: none; margin-bottom: 32px">
+        <li>
           <a href="{{page.url}}"> <h3>{{page.title}}</h3> </a>
           <i>{{page.summary}}</i>
           <div class="text-sm text-alt">{{page.date_created}}</div>
@@ -183,26 +183,29 @@ pub const TAGS_HTML: &str = r#"{% extends "base.html" %}
 pub const DEFAULT_JS: &str = r#"
 "#;
 
-pub const DEFAULT_CSS: &str = r#"
-
-@import url("syntax-theme-dark.css") (prefers-color-scheme: dark);
+pub const DEFAULT_CSS: &str = r#"@import url("syntax-theme-dark.css") (prefers-color-scheme: dark);
 @import url("syntax-theme-light.css") (prefers-color-scheme: light);
 
-
 :root {
-  --bg: #efefef;
+  --bg: rgb(253, 253, 253);
+  --bg-alt: rgb(253, 253, 253);
+  --border-col: rgb(70, 70, 70);
   --color: #333;
   --color-alt: #666;
   --link-color: #2980b9;
+  --font: "Avenir", "Arial";
 }
 
 /* CSS Variables (dark mode) */
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #111;
+    --bg: rgb(33, 33, 39);
+    --bg-alt: rgb(28, 28, 38);
+    --border-col: rgb(25, 25, 25);
     --color: #dfdfdf;
     --color-alt: #666;
     --link-color: #fdcb6e;
+    --font: "Avenir", "Arial";
   }
 }
 
@@ -210,12 +213,13 @@ pub const DEFAULT_CSS: &str = r#"
 body {
   color: var(--color);
   background-color: var(--bg);
-  max-width: 48em;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  font-family: "Charter", Arial;
-  padding: 64px 0;
+  font-family: var(--font);
+  font-size: 16px;
+  max-width: 1920px;
+  margin: 0 auto;
 }
 
 .footnote-definition {
@@ -225,6 +229,23 @@ body {
 
 .footnote-definition-label {
   margin-right: 16px;
+}
+
+nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 32px;
+  border-bottom: 2px solid var(--border-col);
+  background-color: var(--bg);
+}
+
+nav ul {
+  list-style-type: none;
+}
+
+.nav-link {
+  margin-left:16px;
 }
 
 
@@ -238,6 +259,19 @@ pre {
 a {
   color: var(--link-color);
 text-decoration: none;
+}
+
+main {
+  max-width: 60em;
+  width: 100%;
+  margin: 0 auto;
+  margin-top: 48px;
+  padding: 0 32px;
+}
+
+article {
+  font-size: 17px;
+  max-width: 36em;
 }
 
 a:visited {
@@ -260,6 +294,44 @@ img { max-width: 100%; }
 
 .text-alt {
   color: var(--color-alt);
+}
+
+.sidebar {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  margin-right: 80px;
+  padding: 32px;
+  position: sticky;
+  top: 20px;
+  height: 100vh;
+  overflow: auto;
+
+}
+
+@media(max-width: 1200px) {
+  .sidebar {
+    display: none;
+  }
+}
+
+.page-title {
+  margin-bottom: 64px;
+}
+
+/* -- utility classes -- */
+
+.flex {
+  display: flex;
+}
+
+.flex-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.flex-1 {
+  flex: 1;
 }
 "#;
 

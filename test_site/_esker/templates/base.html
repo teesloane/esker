@@ -14,49 +14,57 @@
   </head>
 
   <body class="flex">
+    <nav>
+      <div class="site-name">///// {{config.title}} </div>
+      <ul class="flex">
+        <li><a class="nav-link" href="#replace_me">Post</a></li>
+        <li><a class="nav-link" href="#replace_me">About</a></li>
+        <li><a class="nav-link" href="#replace_me">Feed</a></li>
+      </ul>
+    </nav>
+
+    <div class="flex">
     <main class="flex">
       <div class="flex-col flex-1">
         <article>
           {% if page.title %}
-          <h1 class="page-title"> {{page.title}}</h1>
+            <h1 class="page-title"> {{page.title}}</h1>
           {% endif %}
           {% block content %} {{page.content}} {% endblock content %}
         </article>
-
-        {% if page.backlinks  %}
-        {% if page.backlinks | length > 0 %}
-        <h2> Backlinks </h2>
-        <ul>
-          {% for bl in page.backlinks %}
-          <li><a href="{{bl.originating_file_url}}">{{bl.originating_file_title}}</a></li>
-          {% endfor %}
-        </ul>
-        {% endif %}
-        {% endif %}
       </div>
+
+
+    </main>
 
       <aside class="sidebar">
         {% if page %}
           {% if page.toc | length > 0 %}
-          <h3> Contents </h3>
+          <h4> Contents </h4>
           <ul>
             {% for link in page.toc %}
-            <li><a href="{{link.url}}">{{link.title}}</a></li>
+            {% set hlvl = link.link_type.Toc.heading_level -%}
+            {% set indent_width = hlvl * 4 -%}
+            {% if hlvl == 1 or hlvl == 2 %}
+              <li><a  href="{{link.url}}">{{link.title}}</a></li>
+            {% else %}
+              <li style="margin-left: {{indent_width}}px"><a href="{{link.url}}">{{link.title}}</a></li>
+            {% endif %}
             {% endfor %}
           </ul>
           {% endif %}
+
+        {% if page.backlinks | length > 0 %}
+          <h4> Backlinks </h4>
+          <ul>
+            {% for link in page.backlinks %}
+            <li><a href="{{link.url}}">{{link.title}}</a></li>
+            {% endfor %}
+          </ul>
         {% endif %}
 
-        <h3> Tags </h3>
-        <ul>
-          {% for tag, tagged_items in tags %}
-          <li><a href="{{baseurl}}/tags/{{tag}}.html">{{tag}} ({{tagged_items | length }})</a></li>
-          {% endfor %}
-        </ul>
-
-        {% if page %}
           {% if page.related_files | length > 0 %}
-          <h2>Similarly tagged</h2>
+          <h4>Similarly tagged</h2>
           <ul class="">
             {% for related_link in page.related_files %}
             <li><a href="{{related_link.url}}">{{related_link.title}}</a></li>
@@ -64,21 +72,12 @@
           </ul>
           {% endif %}
         {% endif %}
-
-        <h3> Sitemap </h3>
-        <ul>
-          {% for link in sitemap %}
-          <li><a href="{{link.url}}">{{link.title}}</a></li>
-          {% endfor %}
-        </ul>
       </aside>
-
-    </main>
+    </div>
   </body>
   <script>
     window.x = {{__tera_context}};
   </script>
 
 </html>
-
 
