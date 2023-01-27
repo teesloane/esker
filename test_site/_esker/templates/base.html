@@ -13,12 +13,12 @@
     </style>
   </head>
 
-  <body style="display: flex;">
-    <main style="display: flex;">
-      <div style="display: flex; flex-direction: column; flex: 1;">
+  <body class="flex">
+    <main class="flex">
+      <div class="flex-col flex-1">
         <article>
           {% if page.title %}
-          <h1> {{page.title}}</h1>
+          <h1 class="page-title"> {{page.title}}</h1>
           {% endif %}
           {% block content %} {{page.content}} {% endblock content %}
         </article>
@@ -35,15 +35,16 @@
         {% endif %}
       </div>
 
-      <aside style="display: flex; flex-direction: column; margin-left: 64px;">
-
+      <aside class="sidebar">
         {% if page %}
-        <h3> TOC </h3>
-        <ul>
-          {% for link in page.toc %}
-          <li><a href="{{link.url}}">{{link.title}}</a></li>
-          {% endfor %}
-        </ul>
+          {% if page.toc | length > 0 %}
+          <h3> Contents </h3>
+          <ul>
+            {% for link in page.toc %}
+            <li><a href="{{link.url}}">{{link.title}}</a></li>
+            {% endfor %}
+          </ul>
+          {% endif %}
         {% endif %}
 
         <h3> Tags </h3>

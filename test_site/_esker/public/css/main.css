@@ -5,7 +5,7 @@
 
 
 :root {
-  --bg: #efefef;
+  --bg: rgb(253, 253, 253);
   --color: #333;
   --color-alt: #666;
   --link-color: #2980b9;
@@ -75,4 +75,29 @@ img { max-width: 100%; }
 
 .text-alt {
   color: var(--color-alt);
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  margin-left: 64px;
+}
+
+.page-title {
+  margin-bottom: 64px;
+}
+
+/* -- utility classes -- */
+
+.flex {
+  display: flex;
+}
+
+.flex-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.flex-1 {
+  flex: 1;
 }
