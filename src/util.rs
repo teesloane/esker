@@ -46,6 +46,7 @@ pub fn naive_date_to_str(ndt: NaiveDateTime) -> String {
 // when provided the current directory esker is run in (ex: /Users/my_site/test-site)
 // turns p: "/Users/tees/development/tees/esker/test_site/posts/first_post.md",
 // into: -> posts
+// TODO: change strip_pwd -> strip_cwd
 pub fn strip_pwd(pwd: &Path, p: &Path) -> PathBuf {
     p.strip_prefix(pwd).unwrap().parent().unwrap().to_path_buf()
 }

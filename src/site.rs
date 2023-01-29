@@ -1,5 +1,6 @@
 use colored::*;
 use hotwatch::Event;
+use slugify::slugify;
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
@@ -7,7 +8,10 @@ use std::process::Command;
 use std::{env, fs::create_dir_all, path::PathBuf};
 use syntect::html;
 
+use glob::glob;
+
 use crate::parser::syntax_highlight::THEMES;
+
 use crate::templates::{self, Page};
 use crate::{Cli, Commands};
 // use crate::link::SiteLinks;
@@ -58,6 +62,7 @@ pub struct Site {
     pub tags: HashMap<String, Vec<Link>>,
     /// Sitemap of links to be injected into the Tera context.
     pub template_sitemap: Vec<Link>,
+    pub attachments: Vec<Link>,
     /// Which command was run (build, watch, etc.)
     pub cli_command: Commands,
     /// the clap cli struct.
@@ -115,6 +120,7 @@ impl Site {
             links: SiteLinks::new(),
             tags: HashMap::new(),
             template_sitemap: Vec::new(),
+            attachments: Vec::new(),
             cli,
             cli_command: cmd,
         }
@@ -241,6 +247,7 @@ impl Site {
                 .output()
                 .expect("Internal error: failed to copy data directory to _site.");
         }
+        self.cleanup_unusued_attachments();
     }
 
     /// build_tag_pages will render html pages for each tag,
@@ -376,6 +383,10 @@ impl Site {
         }
     }
 
+    pub fn add_attachment(&mut self, link: Link) {
+        self.attachments.push(link);
+    }
+
     /// filter out files that are in the private folder.
     pub fn is_in_private_folder(&self, file_source: &PathBuf) -> bool {
         if let Some(ignored_dirs) = &self.config.ignored_directories {
@@ -390,6 +401,37 @@ impl Site {
             !ancestors.any(|f| ignored_dirs.contains(&PathBuf::from(f)))
         } else {
             false
+        }
+    }
+
+    /// Runs after copying over dir_attachments, and checks to see
+    /// if all the files in dir_attachments are also in self.attachments;
+    /// if not, we delete them.
+    fn cleanup_unusued_attachments(&self) {
+        if let Some(site_attachments_dir) = &self.dir_esker_site_attachments {
+            let glob_pattern = format!("{}/**/*", site_attachments_dir.display());
+            let approved_attachments: Vec<String> = self
+                .attachments
+                .iter()
+                .filter_map(|link| link.original.clone())
+                .collect();
+            for file in glob(&glob_pattern).unwrap() {
+                match file {
+                    Ok(pathbuf) => {
+                        let trimmed_attachment_path = pathbuf
+                            .strip_prefix(&self.dir_esker_site)
+                            .unwrap()
+                            .to_path_buf();
+                        let attachment_str = &util::path_to_string(&trimmed_attachment_path);
+                        let attachment_str_encoded: String = url_escape::encode_fragment(attachment_str).into();
+
+                        if !approved_attachments.contains(&attachment_str_encoded) {
+                            fs::remove_file(pathbuf).unwrap();
+                        }
+                    }
+                    Err(_e) => (),
+                }
+            }
         }
     }
 

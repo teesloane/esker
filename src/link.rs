@@ -33,7 +33,8 @@ pub enum EskerLinkType {
     RelatedLink,
     Tag,
     TaggedItem {date_created: String},
-    Sitemap {date_created_timestamp: i64}
+    Sitemap {date_created_timestamp: i64},
+    Image
 }
 
 #[derive(Clone, Serialize, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -43,7 +44,8 @@ pub struct Link {
     pub title: String,
     pub originating_file_title: Option<String>,
     pub originating_file_url: Option<String>,
-    pub link_type: EskerLinkType
+    pub link_type: EskerLinkType,
+    pub original: Option<String>
 }
 
 
@@ -61,6 +63,7 @@ impl Link {
             title: md_file.frontmatter.title.clone(),
             originating_file_title: None,
             originating_file_url: None,
+            original: None,
             link_type: EskerLinkType::TaggedItem { date_created: md_file.frontmatter.date_created.to_string() }
         }
     }
@@ -72,6 +75,7 @@ impl Link {
             title: md_file.frontmatter.title.clone(),
             originating_file_title: None,
             originating_file_url: None,
+            original: None,
             link_type: EskerLinkType::Sitemap { date_created_timestamp: md_file.frontmatter.date_created_timestamp }
         }
     }
@@ -92,13 +96,14 @@ impl Link {
 
                     let mut new_link_url: CowStr;
                     if Self::is_mailto(&url) {
-                        new_link_url = url
+                        new_link_url = url.clone()
                     } else {
                         new_link_url = site.build_with_baseurl(url_str).into();
                     }
 
                     self.url = new_link_url.to_string();
                     self.is_internal = true;
+                    self.original = Some(url.to_string())
                 } else {
                     self.url = url.to_string();
                     self.is_internal = false;
@@ -117,6 +122,7 @@ impl Link {
             url: String::new(),
             is_internal: false,
             title: String::from(""),
+            original: None,
             originating_file_url: None,
             originating_file_title: None,
             link_type: EskerLinkType::Default
@@ -148,6 +154,8 @@ impl Link {
         slug_chunks.join("/")
     }
 
+    /// responsible for preparing image links found in markdown docs to work on the web
+    /// prepends an attachments with the baseurl.
     pub fn update_img_link<'a>(
         link_type: LinkType,
         url: CowStr<'a>,
@@ -158,7 +166,19 @@ impl Link {
         if Self::is_internal(&url_str) {
             let url_as_path = PathBuf::from(&url_str);
             url_str = format!("{}", url_as_path.display());
-            let new_link_url: CowStr = site.build_with_baseurl(url_str).into();
+            let full_url = site.build_with_baseurl(url_str.clone());
+            let new_link_url: CowStr = full_url.clone().into();
+            // > push a link type to site.
+
+            // TODO: turn this into a method!
+            let mut attachment_link = Link::empty();
+            attachment_link.is_internal = true;
+            attachment_link.url = full_url;
+            attachment_link.title = title.to_string();
+            attachment_link.link_type = EskerLinkType::Image;
+            attachment_link.original = Some(url.to_string());
+
+            site.add_attachment(attachment_link);
             Tag::Image(link_type, new_link_url, title)
         } else {
             Tag::Image(link_type, url, title)
