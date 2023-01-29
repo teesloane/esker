@@ -49,9 +49,9 @@ pub const BASE_HTML: &str = r##"<html>
     <nav>
       <div class="site-name">///// {{config.title}} </div>
       <ul class="flex">
-        <li><a class="nav-link" href="#replace_me">Post</a></li>
+        <li><a class="nav-link" href="#replace_me">Posts</a></li>
         <li><a class="nav-link" href="#replace_me">About</a></li>
-        <li><a class="nav-link" href="#replace_me">Feed</a></li>
+        <li><a class="nav-link" href="/feed.rss">Feed</a></li>
       </ul>
     </nav>
 
