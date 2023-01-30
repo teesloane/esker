@@ -1,0 +1,102 @@
+#+title: Docs
+
+* Preface & limitations
+
+Esker is a static site generator that works with Obsidian vaults of markdown files. To use esker you should be comfortable in the terminal and probably know some programming stuff.
+
+Esker was built to work with Obsidian, however it *does not* work out of the box without having Obsidian settings changed to work with Esker (at the time of writing).
+
+Before using Esker, you will need to meet the following pre-requisites:
+
+- you have an obsidian vault (or a structure similar to one) with the following settings:
+  + in *Files & Links*, =New Link Format= should be set to "Absolute path in vault"
+  + =Use wikilinks= is set to "false"
+  + have your attachments in a specific directory.
+
+- additionaly limitations are as follows:
+  - tags are only collected from frontmatter
+  - there is no graph feature.
+
+* Quickstart
+
+Once the above prerequisites have been met, the following steps should build a static site for your obsidian vault:
+
+1. Get a release of esker from Github Releases. Currently only Linux and Mac are available.
+2. Move the release into your path
+3. Navigate in your terminal to wherever your obsidian vault is
+4. run the command =esker new=
+5. You should notice that a new folder in your vault is created called =_esker=
+6. try running =esker watch= to create a live server for your site (viewable at localhost:8080) (or whatever =--port= you provide it).
+7. You can also run =esker build= to just build your site, which should be available at =<your vault directory>/_esker/_site=
+8. If you are not seeing anything, you'll need to ensure that your markdown files have valid frontmatter (see frontmatter section).
+
+* Configuration
+
+You can configure your site over in =<your_vault>/_esker/config.yaml=. Documentation for each property is outline in comments in the above file.
+* Tags
+
+If you would like to create "tags" pages for all your tagged content, you will want to set a value for the =tags_url= in your =config.yaml= file. This way, when =esker= builds your site, it will create a tag file for every =#tag= found in the frontmatter of every file. Changing the =tags_url= value will cause the url /to/ these pages to change.
+
+* Frontmatter
+** Dates
+- by default, Esker will get the publication date to the markdown file's "created at" date and sets the "last updated at" to be based on the file's "last modified at" date.
+- If you want to custom set those values, in the frontmatter add ~date_published~ and ~date_created~ with a datestring that looks like the following: "YYYY-mm-dd HH:MM" - for example ~2022-10-12 05:30~
+
+Every file that you would like to include in your built site must have frontmatter. Anything without frontmatter will not be included. The possible key/values that Esker uses are as follows:
+
+| Key           | example value                  |
+|---------------+--------------------------------|
+| title         | My file                        |
+| summary       | This is a description          |
+| tags/tag      | books, programming, learning   |
+| publish       | =true=                           |
+| date_updated* | =2023-01-12= or =2023-01-12 09:30= |
+| date_created* | =2023-01-12= or =2023-01-12 09:30= |
+| template      | single                         |
+
+
+,* If =date_updated= or =date_created= are missing then esker will use the file's last_modified and date_created metadata in lieu of not having the frontmatter.
+
+* Templating
+** Intro
+** Pages
+** Sections
+
+Templates are used to format how your content looks and renders. Esker uses a library called "Tera" which allows you to customize your templates. Tera reads in html files and has a specific syntax that enables interpolating values from esker. If you are unfamiliar with this sort of thing, it is recommended to check out [[https://tera.netlify.app/docs/][Tera's documentation]].
+
+If a file's frontmatter does not have a "template" value, then it will default to using a template called "single.html".
+
+When you create a new site with =esker new= you will fine a _esker/templates directory where you can customize the out of the box defaults.
+* Themes
+
+To create your own theme, do the following:
+
+1. create a directory =_esker/themes=
+2. make a new folder in =_esker/themes= and name it the name of your theme
+3. copy the existing =_esker/public= and =_esker/templates= directories into your theme folder.
+4. in your =_esker/config.yaml= file, set the =theme= variable to be the name of the theme folder you created.
+
+* Syntax highlighting
+
+Esker's handles syntax highlighting in the same way as [[https://www.getzola.org/documentation/content/syntax-highlighting/][Zola]] using the [[https://github.com/trishume/syntect][syntect highlighting]] library. That means that any language that already works in sublime text should be able to be highlighted in your markdown blocks. The following languages have also been added (and should thusly be put at the beginning of your fenced code block.)
+
+#+begin_src
+"elixir"
+"clojure"
+"haskell"
+"perl"
+"python"
+"python3"
+"racket"
+"ruby"
+"rust"
+"shell"
+"elm"
+#+end_src
+
+* Development
+** Syntaxes
+
+Loading a new syntax means adding a =sublime-syntax= file to the ~syntaxes/~
+directory. This seems to only be necessary when sublime doesn't out of the box
+support a language.

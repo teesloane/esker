@@ -2,18 +2,31 @@
 
 > Esker is a static site generator for Obsidian.
 
-Esker is alpha software and probably won't work for your Obsidian vault. Continue at your own peril (not recommended for non-technical users). Please note that filing issues will not be replied to until documentation is written (and who knows if even then). Good luck 😘!
+Esker is alpha software and might not work for your Obsidian vault. Continue at your own peril (not recommended for non-technical users). Please note that filing issues will not be replied to until documentation is written (and who knows if even then). Good luck 😘!
 
 # Usage
 
-To use Esker and generate a site you'll need to do the following:
+Esker was built to work with Obsidian, however it does not work out of the box without having Obsidian settings changed to work with Esker (at this moment).
 
-1. Ensure that you are *only using absolute links in obsidian* (see obsidian preferences).
-1. Compile a binary for your system and move it into your path
-1. Open your terminal, navigate to your vault.
-1. Run `esker new`.
-1. Inspect the `_esker` folder that now lives in your obsidian vault.
-1. Try running `esker build` and see if it creates your site under `<my_vauly>/_esker/_site`.
+Before using Esker, you will need to meet the following pre-requisites:
+
+- you have an obsidian vault (or a structure similar to one) with the following settings:
+  - in **Files & Links**, `New Link Format` should be set to &ldquo;Absolute path in vault&rdquo;
+  - `Use wikilinks` is set to &ldquo;false&rdquo;
+  - have your attachments in a specific directory.
+
+Once the above have been met, the following steps should build a static site for your obsidian vault:
+
+1.  Get a release of esker from Github Releases. Currently only Linux and Mac are available.
+2.  Move the release into your path
+3.  Navigate in your terminal to wherever your obsidian vault is
+4.  run the command `esker new`
+5.  You should notice that a new folder in your vault is created called `_esker`
+6.  try running `esker watch` to create a live server for your site (viewable at localhost:8080) (or whatever `--port` you provide it).
+7.  You can also run `esker build` to just build your site, which should be available at `<your vault directory>/_esker/_site`
+8.  If you are not seeing anything, you&rsquo;ll need to ensure that your markdown files have valid frontmatter (see frontmatter section).
+
+Additional documentation can be found [here](./docs/docs.org)
 
 # Development
 
