@@ -426,7 +426,9 @@ impl Site {
                         let attachment_str_encoded: String = url_escape::encode_fragment(attachment_str).into();
 
                         if !approved_attachments.contains(&attachment_str_encoded) {
-                            fs::remove_file(pathbuf).unwrap();
+                            if pathbuf.is_file() {
+                                fs::remove_file(pathbuf).unwrap();
+                            }
                         }
                     }
                     Err(_e) => (),
