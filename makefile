@@ -9,6 +9,24 @@ install_locally: build cp_to_bin
 build_linux:
 	cargo zigbuild --release --target x86_64-unknown-linux-gnu
 
+build_mac_m1:
+	cargo build --release
+
+build_mac_intel:
+	cargo build --release --target x86_64-apple-darwin
+
+collect_builds:
+	cp target/release/esker out/esker
+	cd out; zip esker_mac_arm.zip esker
+	rm out/esker
+
+	cp target/x86_64-unknown-linux-gnu/release/esker out/esker
+	cd out; zip esker_x86_64-unknown-linux-gnu.zip esker
+	rm out/esker
+
+	cp target/x86_64-apple-darwin/release/esker out/esker
+	cd out; zip x86_64-apple-darwin.zip esker
+	rm out/esker
 
 # == Test Site Cmds ==
 
