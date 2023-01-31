@@ -16,6 +16,7 @@ pub mod util;
 
 use axum::{http::StatusCode, routing::get_service, Router};
 use clap::{Parser, Subcommand};
+use colored::*;
 use hotwatch::Hotwatch;
 use parser::syntax_highlight::dump_syntax_binary;
 use site::Site;
@@ -63,7 +64,9 @@ async fn main() {
         Some(Commands::DumpSyntax) => dump_syntax_binary(),
         Some(Commands::Build) => {
             let mut site = Site::new(Commands::Build, cli);
-            site.build()
+            site.build();
+            println!("{}: site built!", " Success".green().on_black());
+
         }
         None => {}
     }

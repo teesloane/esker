@@ -352,8 +352,6 @@ pub fn init(dir: Option<PathBuf>) {
     } else {
         let dirs = vec![
             "templates/",
-            "templates/partials",
-            "sass",
             "public/css",
             "public/js",
             "_site",

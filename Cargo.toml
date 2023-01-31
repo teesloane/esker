@@ -24,4 +24,5 @@ syntect = "5.0.0"
 tera = "1.17.1"
 tokio = { version = "1.24.2", features = ["full"] }
 tower-http = { version = "0.3.5", features = ["fs", "trace"] }
+trycmd = "0.14.11"
 url-escape = "0.1.1"

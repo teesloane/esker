@@ -47,6 +47,41 @@ pub fn naive_date_to_str(ndt: NaiveDateTime) -> String {
 // turns p: "/Users/tees/development/tees/esker/test_site/posts/first_post.md",
 // into: -> posts
 // TODO: change strip_pwd -> strip_cwd
+// TODO: the name of this should describe that it removes the pwd and the file...
+// just basically gives you the web path.
 pub fn strip_pwd(pwd: &Path, p: &Path) -> PathBuf {
     p.strip_prefix(pwd).unwrap().parent().unwrap().to_path_buf()
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{path::{Path, PathBuf}, env};
+    use chrono::NaiveDateTime;
+    use crate::util::{self, load_files};
+
+    use super::strip_pwd;
+
+    #[test]
+    fn test_strip_pwd() {
+        let full_path = PathBuf::from("/Users/tees/development/tees/esker/test_site");
+        let short_path =
+            PathBuf::from("/Users/tees/development/tees/esker/test_site/posts/private file.md");
+        assert_eq!(strip_pwd(&full_path, &short_path), PathBuf::from("posts"));
+    }
+
+    // NOTE: this is a silly test 🐱.
+    #[test]
+    fn test_naive_date_to_str() {
+        let example_date_str = "2022-12-01 11:50";
+        let ndt = NaiveDateTime::parse_from_str(example_date_str, "%Y-%m-%d %H:%M").unwrap();
+        let res = util::naive_date_to_str(ndt);
+        assert_eq!(res, example_date_str);
+    }
+
+    #[test]
+    fn test_load_files() {
+        let cwd = env::current_dir().unwrap();
+        let res = load_files(&cwd, "tests/example_site/**/*.md");
+        assert!(res.len() > 0);
+    }
 }

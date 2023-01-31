@@ -464,66 +464,6 @@ impl Site {
         }
     }
 
-    // -- New Site generation
-
-    // creates an _esker site and template files
-    pub fn init(dir: Option<PathBuf>) {
-        let cwd: PathBuf;
-        if let Some(dir) = dir {
-            cwd = dir;
-        } else {
-            cwd = env::current_dir().unwrap();
-        }
-
-        let dir_esker = cwd.join("_esker");
-        if fs::metadata(&dir_esker).is_ok() {
-            println!(
-                "{}: An '_esker' site already exists in this directory.",
-                " Failed ".yellow().on_black()
-            );
-        } else {
-            let dirs = vec![
-                "templates/",
-                "templates/partials",
-                "sass",
-                "public/css",
-                "public/js",
-                "_site",
-            ];
-
-            let mut files = HashMap::new();
-            files.insert(String::from("public/js/main.js"), new_site::DEFAULT_JS);
-            files.insert(String::from("public/css/main.css"), new_site::DEFAULT_CSS);
-            files.insert(String::from("templates/base.html"), new_site::BASE_HTML);
-            files.insert(
-                String::from("templates/default.html"),
-                new_site::SINGLE_HTML,
-            );
-            files.insert(String::from("templates/tags.html"), new_site::TAGS_HTML);
-            files.insert(String::from("templates/list.html"), new_site::LIST_HTML);
-            files.insert(String::from("templates/feed.rss"), new_site::RSS_XML);
-            files.insert(String::from("config.yaml"), new_site::CONFIG_YAML);
-
-            // Map over the above strings, turn them into paths, and create them.
-            for &dir in &dirs {
-                let joined_dir = dir_esker.join(dir);
-                fs::create_dir_all(joined_dir).expect("Couldn't create a new firn, directory");
-            }
-
-            for (filename, file_contents) in files {
-                let joined_dir = dir_esker.join(filename);
-                fs::write(joined_dir, file_contents)
-                    .expect("Unable to write new site layout files.");
-            }
-
-            println!(
-                "{}: created a new esker site at: {:?}",
-                " Success ".green().on_black(),
-                dir_esker
-            );
-        }
-    }
-
     pub fn handle_watch_event(&mut self, event: Event) {
         if let Event::Write(path) | Event::Create(path) | Event::Remove(path) = event {
             // NOTE: this removes the last element if it's a file and removes
