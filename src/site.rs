@@ -14,7 +14,6 @@ use crate::parser::syntax_highlight::THEMES;
 
 use crate::templates::{self, Page};
 use crate::{Cli, Commands};
-// use crate::link::SiteLinks;
 use crate::{config::Config, util};
 use crate::{
     errors::Errors,
@@ -172,35 +171,35 @@ impl Site {
         }
     }
 
-    fn rebuild(&mut self) {
-        fs::remove_dir_all(&self.dir_esker_site).expect("failed to delete _site");
+    fn clear_site_for_rebuild(&mut self) {
         self.errors.clear();
-        self.rebuild_config();
-        self.tera = crate::templates::load_templates(&self.dir_esker_templates);
         self.markdown_files.clear();
         self.markdown_files_paths.clear();
         self.invalid_files.clear();
         self.tags.clear();
         self.template_sitemap.clear();
-        self.build();
+
     }
 
-    fn rebuild_config(&mut self) {
+    fn rebuild(&mut self) {
+
+        // reload config
         self.config = Config::new(&self.dir, &self.cli_command);
         let (dir_esker_templates, dir_esker_public) =
             Site::get_possible_theme_paths(&self.config, &self.dir_esker);
         self.dir_esker_templates = dir_esker_templates;
         self.dir_esker_public = dir_esker_public;
+
+        fs::remove_dir_all(&self.dir_esker_site).expect("failed to delete _site");
+
+        // rebuild
+        self.clear_site_for_rebuild();
+        self.tera = crate::templates::load_templates(&self.dir_esker_templates);
+        self.build();
     }
 
     fn rebuild_markdown(&mut self) {
-        self.errors.clear();
-        self.markdown_files.clear();
-        self.markdown_files_paths.clear();
-        self.invalid_files.clear();
-        self.tags.clear();
-        self.template_sitemap.clear();
-
+        self.clear_site_for_rebuild();
         self.load_files();
         self.build_tag_pages();
         self.build_syndication_pages();
