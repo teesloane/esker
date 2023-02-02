@@ -45,3 +45,14 @@ test_site: test_site_remove test_site_new test_site_build
 
 test_site_watch:
 	cd test_site &&../target/debug/esker watch
+
+
+### -- Running test ---
+
+test_cli_overwrite:
+	TRYCMD=overwrite cargo test --test cli_tests -- --nocapture
+test_cli_dump:
+	TRYCMD=dump cargo test --test cli_tests -- --nocapture
+
+test_cli:
+	cargo test --test cli_tests -- --nocapture
