@@ -1,5 +1,5 @@
 ```console
-$ esker new
- Success : created a new esker site at: "[CWD]/_esker"
+$ esker new --dir tests/example_site
+ Success : created a new esker site at: "tests/example_site/_esker"
 
 ```

@@ -32,19 +32,19 @@ build_all_and_collect: build_linux build_mac_m1 build_linux collect_builds
 
 # == Test Site Cmds ==
 
-test_site_remove:
-	rm -rf test_site/_esker/
+example_site_remove:
+	rm -rf tests/example_site/_esker/
 
-test_site_new:
-	cd test_site && ../target/debug/esker new
+example_site_new:
+	cd tests/example_site && ../../target/debug/esker new
 
-test_site_build:
-	cd test_site && ../target/debug/esker build
+example_site_build:
+	cd tests/example_site && ../../target/debug/esker build
 
-test_site: test_site_remove test_site_new test_site_build
+example_site: example_site_remove example_site_new example_site_build
 
-test_site_watch:
-	cd test_site &&../target/debug/esker watch
+example_site_watch:
+	cd tests/example_site && ../../target/debug/esker watch
 
 
 ### -- Running test ---
