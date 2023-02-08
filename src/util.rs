@@ -81,7 +81,7 @@ mod tests {
     #[test]
     fn test_load_files() {
         let cwd = env::current_dir().unwrap();
-        let res = load_files(&cwd, "test_site/**/*.md");
+        let res = load_files(&cwd, "tests/example_site/**/*.md");
         assert!(res.len() > 0);
     }
 }

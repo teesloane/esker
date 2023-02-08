@@ -174,32 +174,3 @@ pub fn dump_syntax_binary() {
     let ss = builder.build();
     dumps::dump_to_uncompressed_file(&ss, file).unwrap();
 }
-
-
-
-#[cfg(test)]
-mod tests {
-    use pulldown_cmark::{html, Options, Parser};
-
-    use super::CodeBlockSyntaxHighlight;
-
-    fn convert(s: &str) -> String {
-        let transformed = Parser::new_ext(s, Options::all());
-        let transformed = CodeBlockSyntaxHighlight::new(transformed);
-        let mut body = String::new();
-        html::push_html(&mut body, transformed);
-        body
-    }
-
-    #[test]
-    fn test_thing() {
-        let s = r"
-```rust
-let x = 2;
-```
-";
-        let res = convert(s);
-        println!("{:?}", res);
-        assert!(res.starts_with(r#"<pre><code class="language-rust">"#))
-    }
-}
