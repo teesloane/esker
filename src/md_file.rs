@@ -79,8 +79,20 @@ impl MdFile {
 
     /// collect links, tags, etc so that they are available the next pass when we render.
     pub fn parse_markdown_to_html(&mut self, site: &mut Site) {
+        self.preprocess();
         let parsed_str = parser::new(self, site);
         self.html = parsed_str;
+    }
+
+    /// checks if this site uses wikilinks and if so, run a regex
+    /// that converts all wikilinks to markdown links in .raw
+    fn preprocess(&mut self) {
+        let has_wikilinks = false;
+        if has_wikilinks {
+            // TODO: write some regex that transforms wikilinks to markdown links.
+            let preprocessed_raw = "".to_string();
+            self.raw = preprocessed_raw;
+        }
     }
 
     fn get_related_files(&mut self, site: &Site) {
@@ -152,8 +164,10 @@ impl MdFile {
         let mut out: Vec<Link> = Vec::new();
         for g_link in &site.links.internal {
             if let Some(originating_file_url) = &g_link.originating_file_url {
-
-                if g_link.url == self.full_url && self.full_url != originating_file_url.clone() && !out.contains(g_link) {
+                if g_link.url == self.full_url
+                    && self.full_url != originating_file_url.clone()
+                    && !out.contains(g_link)
+                {
                     out.push(g_link.clone());
                 }
             }
@@ -185,5 +199,24 @@ impl MdFile {
 
         self.raw = output.join("\n");
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod test {
+
+    use lazy_static::lazy_static;
+    use regex::Regex;
+
+    lazy_static! {
+        static ref WIKILINK: Regex = Regex::new(r"\[\[([^\]\[:]+)\]\]").unwrap();
+        static ref WIKILINK_WITH_PIPE: Regex =
+            Regex::new(r"\[\[([^\]\[:]+)\|([^\]\[:]+)\]\]").unwrap();
+    }
+
+    #[test]
+    fn test_wikilink() {
+      assert!(WIKILINK.is_match("[[I am a link]]"));
+      // assert!(WIKILINK_WITH_PIPE.is_match("[[I am a link | foo]]"));
     }
 }
