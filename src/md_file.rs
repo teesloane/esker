@@ -8,8 +8,16 @@ use crate::site::Site;
 use crate::templates;
 use slugify::slugify;
 use std::io;
+use lazy_static::lazy_static;
 use std::io::{BufRead, BufReader};
 use tera::Context;
+    use regex::{Regex, Captures};
+
+lazy_static! {
+    static ref WIKILINK: Regex = Regex::new(r"\[\[([^\]\[:]+)\]\]").unwrap();
+    static ref WIKILINK_WITH_PIPE: Regex =
+        Regex::new(r"\[\[([^\]\[:]+)\|([^\]\[:]+)\]\]").unwrap();
+}
 
 #[derive(Debug, Clone)]
 pub struct MdFile {
@@ -87,11 +95,14 @@ impl MdFile {
     /// checks if this site uses wikilinks and if so, run a regex
     /// that converts all wikilinks to markdown links in .raw
     fn preprocess(&mut self) {
-        let has_wikilinks = false;
+        // TODO: replace this with a check in the config if user has wikilinks
+        let has_wikilinks = true;
         if has_wikilinks {
             // TODO: write some regex that transforms wikilinks to markdown links.
-            let preprocessed_raw = "".to_string();
-            self.raw = preprocessed_raw;
+            let processed = WIKILINK.replace_all(&self.raw, |caps: &Captures| {
+                format!("[{}]({}.md)", &caps[1], &caps[1])
+            });
+            self.raw = processed.to_string();
         }
     }
 
@@ -204,9 +215,8 @@ impl MdFile {
 
 #[cfg(test)]
 mod test {
-
     use lazy_static::lazy_static;
-    use regex::Regex;
+    use regex::{Regex, Captures};
 
     lazy_static! {
         static ref WIKILINK: Regex = Regex::new(r"\[\[([^\]\[:]+)\]\]").unwrap();
@@ -216,7 +226,14 @@ mod test {
 
     #[test]
     fn test_wikilink() {
-      assert!(WIKILINK.is_match("[[I am a link]]"));
-      // assert!(WIKILINK_WITH_PIPE.is_match("[[I am a link | foo]]"));
+        assert!(WIKILINK.is_match("[[I am a link]]"));
+        let ex = "I like [[foo/Oranges]] and here's [[another link]]";
+
+        let result = WIKILINK.replace_all(ex, |caps: &Captures| {
+            print!("\n{:?}", &caps);
+            format!("[{}]({})", &caps[1], &caps[1])
+        });
+
+        println!("\n\n caps are {:#?}", result);
     }
 }
