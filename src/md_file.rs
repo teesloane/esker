@@ -29,6 +29,7 @@ pub struct MdFile {
     pub web_path: PathBuf,
     out_path: PathBuf,
     pub frontmatter: Frontmatter,
+    pub file_name_without_extension: PathBuf,
     pub full_url: String,
     /// if file is a _index.md, we say it's a section, which
     /// is given a different tera context to render.
@@ -72,6 +73,7 @@ impl MdFile {
             web_path: web_path_stem,
             out_path,
             frontmatter: fm,
+            file_name_without_extension: PathBuf::from(filename.clone()),
             full_url,
             is_section: filename == "_index",
             backlinks: Vec::new(),
@@ -98,13 +100,19 @@ impl MdFile {
     fn preprocess(&mut self, site: &mut Site) {
         println!("preprocessing {:#?}", self.frontmatter.title);
         // TODO: replace this with a check in the config if user has wikilinks
-        println!(">>>>>>>>>>> {:#?}", site.flat_sitemap);
         let has_wikilinks = true;
         if has_wikilinks {
             // TODO: write some regex that transforms wikilinks to markdown links.
             let processed = WIKILINK.replace_all(&self.raw, |caps: &Captures| {
-                // print!("Hey! Replacing a wikilink: {:#?} with a markdown link", caps);
-                format!("[{}]({}.md)", &caps[1], &caps[1])
+                let link_name = &caps[1];
+                let markdown_link_url = site.flat_sitemap.get(&PathBuf::from(link_name));
+                if let Some(url) = markdown_link_url {
+                    return format!("[{}]({}.md)", &caps[1], url);
+                } else {
+                    println!("Did not find link in site map for {:?}", link_name);
+                    return format!("[{}]({}.md)", &caps[1], &caps[1]);
+                }
+
             });
             self.raw = processed.to_string();
         }

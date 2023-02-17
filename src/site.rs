@@ -313,38 +313,44 @@ impl Site {
             .filter(|f| self.is_in_private_folder(f))
             .collect();
         let mut markdown_files: HashMap<PathBuf, Vec<MdFile>> = HashMap::new();
+        let mut flat_sitemap: HashMap<PathBuf, String> = HashMap::new();
         let mut invalid_files: Vec<PathBuf> = Vec::new();
 
-
-
-        // collect all files and push them into the map.
+        // Loop over files, collect metadata before processing.
         markdown_files_paths_filtered.iter().for_each(|f| {
             if let Some(fm) = Frontmatter::new(self, f) {
                 let read_file = fs::read_to_string(f).expect("Unable to open file");
                 let mut md_file = MdFile::new(self, read_file, f.to_path_buf(), fm);
 
+                let mut insert_to_sitemap = || {
+                    flat_sitemap.insert(
+                        // key
+                        md_file
+                            .web_path_parents
+                            .clone()
+                            .join(md_file.file_name_without_extension.clone()),
+                        //value
+                        util::path_to_string(
+                            &md_file
+                                .web_path_parents
+                                .clone()
+                                .join(md_file.file_name_without_extension.clone()),
+                        )
+                    );
+                };
+
+
                 if md_file.frontmatter.publish {
                     if let Some(vec_of_files) = markdown_files.get_mut(&md_file.web_path_parents) {
                         self.collect_tags_from_frontmatter(&md_file);
                         self.template_sitemap.push(Link::new_sitemap_link(&md_file));
-                        self.flat_sitemap.insert(
-                            md_file
-                                .web_path_parents
-                                .clone()
-                                .join(md_file.web_path.clone().file_stem().unwrap()),
-                            md_file.full_url.clone(),
-                        );
-                        // md_file.parse_markdown_to_html(self);
+                        insert_to_sitemap();
                         vec_of_files.push(md_file);
                     } else {
                         self.collect_tags_from_frontmatter(&md_file);
-                        self.flat_sitemap.insert(
-                            md_file
-                                .web_path_parents
-                                .clone()
-                                .join(md_file.web_path.clone().file_stem().unwrap()),
-                            md_file.full_url.clone(),
-                        );
+
+                        insert_to_sitemap();
+
                         markdown_files.insert(md_file.web_path_parents.clone(), vec![md_file]);
                     }
                 }
@@ -353,13 +359,15 @@ impl Site {
             }
         });
 
-        // TODO: leaving off: how can we run parse_markdown outside of the loop above, like below:
-        for (path, vec_of_files) in markdown_files {
+        self.flat_sitemap = flat_sitemap;
+        println!("{:#?}", self.flat_sitemap );
+
+        // We parse outside of the above loop so that we can ensure that we have access to the flat sitemap
+        for (path, vec_of_files) in &mut markdown_files {
             for mut md_file in vec_of_files {
                 md_file.parse_markdown_to_html(self);
             }
         }
-
 
         // TODO (i tried, i don't know): not sure how to not have to clone this.
         let markdown_files_clone = markdown_files.clone();
