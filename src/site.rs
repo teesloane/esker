@@ -68,7 +68,8 @@ pub struct Site {
     pub cli: Cli,
 
     // TODO: document this later or change the name plz.
-    pub flat_sitemap: HashMap<PathBuf, String>,
+    // This is used just for the ability to convert wikilinks into markdown links.
+    pub flat_sitemap: HashMap<PathBuf, Vec<String>>,
 }
 
 impl Site {
@@ -173,8 +174,6 @@ impl Site {
         if self.errors.has_errors() {
             self.errors.report_errors(self.cli.verbose);
         }
-
-        // println!("the flat site map {:#?}", self.flat_sitemap);
     }
 
     fn clear_site_for_rebuild(&mut self) {
@@ -313,7 +312,7 @@ impl Site {
             .filter(|f| self.is_in_private_folder(f))
             .collect();
         let mut markdown_files: HashMap<PathBuf, Vec<MdFile>> = HashMap::new();
-        let mut flat_sitemap: HashMap<PathBuf, String> = HashMap::new();
+        let mut flat_sitemap: HashMap<PathBuf, Vec<String>> = HashMap::new();
         let mut invalid_files: Vec<PathBuf> = Vec::new();
 
         // Loop over files, collect metadata before processing.
@@ -322,34 +321,18 @@ impl Site {
                 let read_file = fs::read_to_string(f).expect("Unable to open file");
                 let mut md_file = MdFile::new(self, read_file, f.to_path_buf(), fm);
 
-                let mut insert_to_sitemap = || {
-                    flat_sitemap.insert(
-                        // key
-                        md_file
-                            .web_path_parents
-                            .clone()
-                            .join(md_file.file_name_without_extension.clone()),
-                        //value
-                        util::path_to_string(
-                            &md_file
-                                .web_path_parents
-                                .clone()
-                                .join(md_file.file_name_without_extension.clone()),
-                        )
-                    );
-                };
-
-
+                // pushes files into the markdown_files map
                 if md_file.frontmatter.publish {
                     if let Some(vec_of_files) = markdown_files.get_mut(&md_file.web_path_parents) {
                         self.collect_tags_from_frontmatter(&md_file);
+                        // TODO: why isn't this in the else block as well?
                         self.template_sitemap.push(Link::new_sitemap_link(&md_file));
-                        insert_to_sitemap();
+
+                        Self::collect_flat_sitemap(&md_file, &mut flat_sitemap);
                         vec_of_files.push(md_file);
                     } else {
+                        Self::collect_flat_sitemap(&md_file, &mut flat_sitemap);
                         self.collect_tags_from_frontmatter(&md_file);
-
-                        insert_to_sitemap();
 
                         markdown_files.insert(md_file.web_path_parents.clone(), vec![md_file]);
                     }
@@ -360,7 +343,7 @@ impl Site {
         });
 
         self.flat_sitemap = flat_sitemap;
-        println!("{:#?}", self.flat_sitemap );
+        println!("{:#?}", self.flat_sitemap);
 
         // We parse outside of the above loop so that we can ensure that we have access to the flat sitemap
         for (path, vec_of_files) in &mut markdown_files {
@@ -407,6 +390,29 @@ impl Site {
 
     pub fn build_with_baseurl(&self, web_path: String) -> String {
         format!("{}/{}", self.config.url, web_path)
+    }
+
+    /// Allow us to pass k (which is the text from a wikilink) to find the linked item in the flat_sitemap
+    /// it should return the equivalent markdown link to that file.
+    /// Here be petit dragons, because of wikilinks being hard.
+    pub fn get_item_from_flat_sitemap(&self, k: PathBuf) -> Option<String> {
+        //WRITE BAD CODE ALL DAY EVERY DAY!
+        println!("looking in flast sitemap for K: {:?}", k);
+        if let Some(possible_md_paths) = self.flat_sitemap.get(&k) {
+            // println!("posbmdf {:#?}", possible_md_paths);
+            for f in possible_md_paths {
+                if PathBuf::from(f) == k {
+                    return Some(f.to_string());
+                } else {
+                    return Some(f.to_string());
+                }
+            }
+
+            // if possible_md_paths.len() > 0 {
+            //     return Some(possible_md_paths[0].clone());
+            // }
+        }
+        return None;
     }
 
     // used to add links to the internal global links list.
@@ -537,6 +543,54 @@ impl Site {
                     }
                 }
             }
+        }
+    }
+
+    // YEAH!
+    //
+    //   ,    /),
+    //   (( -.((_))  _,)
+    //   ,\`.'_  _`-','
+    //   `.> <> <>  (,-
+    //  ,',    |     `._,)
+    // ((  )   |,   (`--'
+    //  `'( ) _--_,-.\ SSt
+    //     /,' \( )  `'
+    //    ((    `\
+    //     `
+    //
+    fn collect_flat_sitemap(md_file: &MdFile, flat_sitemap: &mut HashMap<PathBuf, Vec<String>>) {
+        let md_rel_path_link = &md_file
+            .web_path_parents
+            .clone()
+            .join(md_file.file_name_without_extension.clone())
+            .to_path_buf();
+        let md_rel_path_link_str = util::path_to_string(&md_rel_path_link);
+
+        // println!("md_rel_path_link_str: {:?}", md_rel_path_link_str);
+
+        //insert the full path first: /my/foo/celery
+        if let Some(res) = flat_sitemap.get_mut(md_rel_path_link) {
+            if !res.contains(&md_rel_path_link_str) {
+                res.push(md_rel_path_link_str.clone())
+            }
+        } else {
+            flat_sitemap.insert(md_rel_path_link.clone(), vec![md_rel_path_link_str.clone()]);
+        }
+
+        // try and insert just the file stem
+        let file_stem = md_file.file_name_without_extension.clone();
+        if let Some(res) = flat_sitemap.get_mut(&file_stem) {
+            let x = util::path_to_string(&file_stem);
+
+            if !res.contains(&md_rel_path_link_str)  {
+                res.push(md_rel_path_link_str.clone());
+                if  !res.contains(&x) {
+                    res.push(x);
+                }
+            }
+        } else {
+            flat_sitemap.insert(file_stem, vec![md_rel_path_link_str.clone()]);
         }
     }
 }

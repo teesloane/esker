@@ -105,7 +105,7 @@ impl MdFile {
             // TODO: write some regex that transforms wikilinks to markdown links.
             let processed = WIKILINK.replace_all(&self.raw, |caps: &Captures| {
                 let link_name = &caps[1];
-                let markdown_link_url = site.flat_sitemap.get(&PathBuf::from(link_name));
+                let markdown_link_url = site.get_item_from_flat_sitemap(PathBuf::from(link_name));
                 if let Some(url) = markdown_link_url {
                     return format!("[{}]({}.md)", &caps[1], url);
                 } else {
