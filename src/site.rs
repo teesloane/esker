@@ -13,7 +13,6 @@ use glob::glob;
 use crate::parser::syntax_highlight::THEMES;
 
 use crate::templates::{self, Page};
-use crate::{Cli, Commands};
 use crate::{config::Config, util};
 use crate::{
     errors::Errors,
@@ -22,6 +21,7 @@ use crate::{
     md_file::MdFile,
     new_site,
 };
+use crate::{Cli, Commands};
 
 #[derive(Debug)]
 pub struct Site {
@@ -66,6 +66,9 @@ pub struct Site {
     pub cli_command: Commands,
     /// the clap cli struct.
     pub cli: Cli,
+
+    // TODO: document this later or change the name plz.
+    pub flat_sitemap: HashMap<PathBuf, String>,
 }
 
 impl Site {
@@ -122,6 +125,7 @@ impl Site {
             attachments: Vec::new(),
             cli,
             cli_command: cmd,
+            flat_sitemap: HashMap::new(),
         }
     }
 
@@ -169,6 +173,8 @@ impl Site {
         if self.errors.has_errors() {
             self.errors.report_errors(self.cli.verbose);
         }
+
+        // println!("the flat site map {:#?}", self.flat_sitemap);
     }
 
     fn clear_site_for_rebuild(&mut self) {
@@ -178,11 +184,9 @@ impl Site {
         self.invalid_files.clear();
         self.tags.clear();
         self.template_sitemap.clear();
-
     }
 
     fn rebuild(&mut self) {
-
         // reload config
         self.config = Config::new(&self.dir, &self.cli_command);
         let (dir_esker_templates, dir_esker_public) =
@@ -311,6 +315,8 @@ impl Site {
         let mut markdown_files: HashMap<PathBuf, Vec<MdFile>> = HashMap::new();
         let mut invalid_files: Vec<PathBuf> = Vec::new();
 
+
+
         // collect all files and push them into the map.
         markdown_files_paths_filtered.iter().for_each(|f| {
             if let Some(fm) = Frontmatter::new(self, f) {
@@ -321,10 +327,24 @@ impl Site {
                     if let Some(vec_of_files) = markdown_files.get_mut(&md_file.web_path_parents) {
                         self.collect_tags_from_frontmatter(&md_file);
                         self.template_sitemap.push(Link::new_sitemap_link(&md_file));
-                        md_file.parse_markdown_to_html(self);
+                        self.flat_sitemap.insert(
+                            md_file
+                                .web_path_parents
+                                .clone()
+                                .join(md_file.web_path.clone().file_stem().unwrap()),
+                            md_file.full_url.clone(),
+                        );
+                        // md_file.parse_markdown_to_html(self);
                         vec_of_files.push(md_file);
                     } else {
                         self.collect_tags_from_frontmatter(&md_file);
+                        self.flat_sitemap.insert(
+                            md_file
+                                .web_path_parents
+                                .clone()
+                                .join(md_file.web_path.clone().file_stem().unwrap()),
+                            md_file.full_url.clone(),
+                        );
                         markdown_files.insert(md_file.web_path_parents.clone(), vec![md_file]);
                     }
                 }
@@ -332,6 +352,14 @@ impl Site {
                 invalid_files.push(f.to_path_buf());
             }
         });
+
+        // TODO: leaving off: how can we run parse_markdown outside of the loop above, like below:
+        for (path, vec_of_files) in markdown_files {
+            for mut md_file in vec_of_files {
+                md_file.parse_markdown_to_html(self);
+            }
+        }
+
 
         // TODO (i tried, i don't know): not sure how to not have to clone this.
         let markdown_files_clone = markdown_files.clone();
@@ -422,7 +450,8 @@ impl Site {
                             .unwrap()
                             .to_path_buf();
                         let attachment_str = &util::path_to_string(&trimmed_attachment_path);
-                        let attachment_str_encoded: String = url_escape::encode_fragment(attachment_str).into();
+                        let attachment_str_encoded: String =
+                            url_escape::encode_fragment(attachment_str).into();
 
                         if !approved_attachments.contains(&attachment_str_encoded) {
                             if pathbuf.is_file() {

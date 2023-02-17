@@ -25,6 +25,7 @@ pub struct MdFile {
     pub html: String,
     path: PathBuf,
     pub web_path_parents: PathBuf,
+    /// TODO: doc me!
     pub web_path: PathBuf,
     out_path: PathBuf,
     pub frontmatter: Frontmatter,
@@ -87,19 +88,22 @@ impl MdFile {
 
     /// collect links, tags, etc so that they are available the next pass when we render.
     pub fn parse_markdown_to_html(&mut self, site: &mut Site) {
-        self.preprocess();
+        self.preprocess(site);
         let parsed_str = parser::new(self, site);
         self.html = parsed_str;
     }
 
     /// checks if this site uses wikilinks and if so, run a regex
     /// that converts all wikilinks to markdown links in .raw
-    fn preprocess(&mut self) {
+    fn preprocess(&mut self, site: &mut Site) {
+        println!("preprocessing {:#?}", self.frontmatter.title);
         // TODO: replace this with a check in the config if user has wikilinks
+        println!(">>>>>>>>>>> {:#?}", site.flat_sitemap);
         let has_wikilinks = true;
         if has_wikilinks {
             // TODO: write some regex that transforms wikilinks to markdown links.
             let processed = WIKILINK.replace_all(&self.raw, |caps: &Captures| {
+                // print!("Hey! Replacing a wikilink: {:#?} with a markdown link", caps);
                 format!("[{}]({}.md)", &caps[1], &caps[1])
             });
             self.raw = processed.to_string();
